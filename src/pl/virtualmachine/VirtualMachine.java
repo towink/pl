@@ -22,56 +22,25 @@ public class VirtualMachine {
     
     // memory
     private Value[] memory;
+    DynamicMemoryManager dynamicMemoryManager;
     
     // program counter - necessary for realizing control structures
     private int pc;
     
+    // we throw this exception when there is an error during execution
+    private static class VirtualMachineRuntimeException extends RuntimeException {}
+    
     /* constructors */
     
-    public VirtualMachine(int memorySize) {
+    public VirtualMachine(int staticMemorySize, int heapSize) {
         code = new ArrayList<>();  
         stack = new Stack<>();
-        memory = new Value[memorySize];
+        memory = new Value[staticMemorySize + heapSize];
+        dynamicMemoryManager = new DynamicMemoryManager(
+                staticMemorySize,
+                staticMemorySize + heapSize - 1
+        );
         pc = 0;
-        
-        // instruction singletons 
-        
-        INSTRUCTION_ADD_INT = new InstructionAddInt();
-        INSTRUCTION_ADD_REAL = new InstructionAddReal();
-        INSTRUCTION_MULT_INT = new InstructionMultInt();
-        INSTRUCTION_MULT_REAL = new InstructionMultReal();
-        INSTRUCTION_SUBT_INT = new InstructionSubtInt();
-        INSTRUCTION_SUBT_REAL = new InstructionSubtReal();
-        INSTRUCTION_DIV_INT = new InstructionDivInt();
-        INSTRUCTION_DIV_REAL = new InstructionDivReal();
-        INSTRUCTION_REST = new InstructionRest();
-        
-        INSTRUCTION_SIGN_CHANGE = new InstructionSignChange();
-        
-        INSTRUCTION_CONVERT_INT = new InstructionConvertInt();
-        INSTRUCTION_CONVERT_BOOL = new InstructionConvertBool();
-        INSTRUCTION_CONVERT_REAL = new InstructionConvertReal();
-        INSTRUCTION_CONVERT_CHAR = new InstructionConvertChar();
-        INSTRUCTION_CONVERT_STRING = new InstructionConvertString();
-        
-        INSTRUCTION_CONCAT_STRING = new InstructionConcatString();
-        INSTRUCTION_CHAIN_ELEMENT = new InstructionChainElement();
-        
-        INSTRUCTION_EQUAL = new InstructionEqual();
-        INSTRUCTION_EQUAL_POP_1 = new InstructionEqualPop1();
-        INSTRUCTION_UNEQUAL = new InstructionUnequal();
-        INSTRUCTION_LESS = new InstructionLess();
-        INSTRUCTION_LESS_EQUAL = new InstructionLessEqual();
-        INSTRUCTION_GREATER = new InstructionGreater();
-        INSTRUCTION_GREATER_EQUAL = new InstructionGreaterEqual();
-        
-        INSTRUCTION_AND = new InstructionAnd();
-        INSTRUCTION_OR = new InstructionOr();
-        INSTRUCTION_NOT = new InstructionNot();
-        
-        INSTRUCTION_WRITE = new InstructionWrite();
-        
-        UNKNOWN = new ValueUnknown();
     }
    
     /* public member funtions */
@@ -131,11 +100,11 @@ public class VirtualMachine {
      * Represents a value on the machines stack or in its registers.
      */
     private abstract class Value implements Comparable<Value> {
-        public int getInt() {throw new UnsupportedOperationException();}  
-        public boolean getBool() {throw new UnsupportedOperationException();}
-        public double getReal() {throw new UnsupportedOperationException();}
-        public char getChar() {throw new UnsupportedOperationException();}
-        public String getString() {throw new UnsupportedOperationException();}
+        public int getInt() { throw new UnsupportedOperationException(); }  
+        public boolean getBool() { throw new UnsupportedOperationException(); }
+        public double getReal() { throw new UnsupportedOperationException(); }
+        public char getChar() { throw new UnsupportedOperationException(); }
+        public String getString() { throw new UnsupportedOperationException(); }
         
         public Value signChange() {
             throw new UnsupportedOperationException("sign change does not apply to this value");
@@ -391,7 +360,7 @@ public class VirtualMachine {
      * Conversion overview:
      *      cannot be converted to other types.
      */
-    private final Value UNKNOWN;
+    private final Value UNKNOWN = new ValueUnknown();
     private class ValueUnknown extends Value {
         @Override
         public String toString() {
@@ -424,6 +393,9 @@ public class VirtualMachine {
         /**
          * Subclasses must implement this method to specify how the value is
          * processed.
+         * 
+         * @param op is the value popped from the stack
+         * @return value to be pushed on the stack
          */
         protected abstract Value process(Value op);
         
@@ -451,6 +423,10 @@ public class VirtualMachine {
         /**
          * Subclasses must implement this method to specify how the values are
          * processed.
+         *  
+         * @param op1 is the element below the topmost element from the stack
+         * @param op2 is the topmost element from the stack
+         * @return value to be pushed on the stack
          */
         protected abstract Value process(Value op1, Value op2);
         
@@ -471,7 +447,7 @@ public class VirtualMachine {
     
     /* conversion instructions */
     
-    private InstructionConvertInt INSTRUCTION_CONVERT_INT;
+    private InstructionConvertInt INSTRUCTION_CONVERT_INT = new InstructionConvertInt();
     private class InstructionConvertInt extends PopPushInstruction {
         @Override
         protected Value process(Value op) {
@@ -483,7 +459,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionConvertBool INSTRUCTION_CONVERT_BOOL;
+    private InstructionConvertBool INSTRUCTION_CONVERT_BOOL = new InstructionConvertBool();
     private class InstructionConvertBool extends PopPushInstruction {
         @Override
         protected Value process(Value op) {
@@ -495,7 +471,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionConvertReal INSTRUCTION_CONVERT_REAL;
+    private InstructionConvertReal INSTRUCTION_CONVERT_REAL = new InstructionConvertReal();
     private class InstructionConvertReal extends PopPushInstruction {
         @Override
         protected Value process(Value op) {
@@ -507,7 +483,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionConvertChar INSTRUCTION_CONVERT_CHAR;
+    private InstructionConvertChar INSTRUCTION_CONVERT_CHAR = new InstructionConvertChar();
     private class InstructionConvertChar extends PopPushInstruction {
         @Override
         protected Value process(Value op) {
@@ -519,7 +495,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionConvertString INSTRUCTION_CONVERT_STRING;
+    private InstructionConvertString INSTRUCTION_CONVERT_STRING = new InstructionConvertString();
     private class InstructionConvertString extends PopPushInstruction {
         @Override
         protected Value process(Value op) {
@@ -533,7 +509,7 @@ public class VirtualMachine {
     
     /* arithmetic instructions */
     
-    private InstructionSignChange INSTRUCTION_SIGN_CHANGE;
+    private InstructionSignChange INSTRUCTION_SIGN_CHANGE = new InstructionSignChange();
     private class InstructionSignChange extends PopPushInstruction {
         @Override
         protected Value process(Value op) {
@@ -545,7 +521,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionAddInt INSTRUCTION_ADD_INT;
+    private InstructionAddInt INSTRUCTION_ADD_INT = new InstructionAddInt();
     private class InstructionAddInt extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -557,7 +533,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionAddReal INSTRUCTION_ADD_REAL;
+    private InstructionAddReal INSTRUCTION_ADD_REAL = new InstructionAddReal();
     private class InstructionAddReal extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -569,7 +545,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionMultInt INSTRUCTION_MULT_INT;
+    private InstructionMultInt INSTRUCTION_MULT_INT = new InstructionMultInt();
     private class InstructionMultInt extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -581,7 +557,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionMultReal INSTRUCTION_MULT_REAL;
+    private InstructionMultReal INSTRUCTION_MULT_REAL = new InstructionMultReal();
     private class InstructionMultReal extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -593,7 +569,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionSubtInt INSTRUCTION_SUBT_INT;
+    private InstructionSubtInt INSTRUCTION_SUBT_INT = new InstructionSubtInt();
     private class InstructionSubtInt extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -605,7 +581,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionSubtReal INSTRUCTION_SUBT_REAL;
+    private InstructionSubtReal INSTRUCTION_SUBT_REAL = new InstructionSubtReal();
     private class InstructionSubtReal extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -617,7 +593,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionDivInt INSTRUCTION_DIV_INT;
+    private InstructionDivInt INSTRUCTION_DIV_INT = new InstructionDivInt();
     private class InstructionDivInt extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -629,7 +605,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionDivReal INSTRUCTION_DIV_REAL;
+    private InstructionDivReal INSTRUCTION_DIV_REAL = new InstructionDivReal();
     private class InstructionDivReal extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -641,7 +617,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionRest INSTRUCTION_REST;
+    private InstructionRest INSTRUCTION_REST = new InstructionRest();
     private class InstructionRest extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -656,7 +632,7 @@ public class VirtualMachine {
     
     /* instructions with strings */
     
-    private InstructionConcatString INSTRUCTION_CONCAT_STRING;
+    private InstructionConcatString INSTRUCTION_CONCAT_STRING = new InstructionConcatString();
     private class InstructionConcatString extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -669,7 +645,7 @@ public class VirtualMachine {
         
     }
     
-    private InstructionChainElement INSTRUCTION_CHAIN_ELEMENT;
+    private InstructionChainElement INSTRUCTION_CHAIN_ELEMENT = new InstructionChainElement();
     private class InstructionChainElement extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -685,7 +661,7 @@ public class VirtualMachine {
     
     /* relational instructions */
     
-    private InstructionEqual INSTRUCTION_EQUAL;
+    private InstructionEqual INSTRUCTION_EQUAL = new InstructionEqual();
     private class InstructionEqual extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -697,7 +673,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionEqualPop1 INSTRUCTION_EQUAL_POP_1;
+    private InstructionEqualPop1 INSTRUCTION_EQUAL_POP1 = new InstructionEqualPop1();
     private class InstructionEqualPop1 extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -710,7 +686,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionUnequal INSTRUCTION_UNEQUAL;
+    private InstructionUnequal INSTRUCTION_UNEQUAL = new InstructionUnequal();
     private class InstructionUnequal extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -722,7 +698,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionLess INSTRUCTION_LESS;
+    private InstructionLess INSTRUCTION_LESS = new InstructionLess();
     private class InstructionLess extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -734,7 +710,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionLessEqual INSTRUCTION_LESS_EQUAL;
+    private InstructionLessEqual INSTRUCTION_LESS_EQUAL = new InstructionLessEqual();
     private class InstructionLessEqual extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -746,7 +722,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionGreater INSTRUCTION_GREATER;
+    private InstructionGreater INSTRUCTION_GREATER = new InstructionGreater();
     private class InstructionGreater extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -758,7 +734,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionGreaterEqual INSTRUCTION_GREATER_EQUAL;
+    private InstructionGreaterEqual INSTRUCTION_GREATER_EQUAL = new InstructionGreaterEqual();
     private class InstructionGreaterEqual extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -772,7 +748,7 @@ public class VirtualMachine {
     
     /* logical instructions */
     
-    private InstructionNot INSTRUCTION_NOT;
+    private InstructionNot INSTRUCTION_NOT = new InstructionNot();
     private class InstructionNot extends PopPushInstruction {
         @Override
         protected Value process(Value op) {
@@ -784,7 +760,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionAnd INSTRUCTION_AND;
+    private InstructionAnd INSTRUCTION_AND = new InstructionAnd();
     private class InstructionAnd extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -796,7 +772,7 @@ public class VirtualMachine {
         }
     }
     
-    private InstructionOr INSTRUCTION_OR;
+    private InstructionOr INSTRUCTION_OR = new InstructionOr();
     private class InstructionOr extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
@@ -824,8 +800,7 @@ public class VirtualMachine {
         public String toString() {
             return "pushInt(" + value + ")";
         }
-    }
-    
+    } 
     private class InstructionPushBool implements MachineInstruction {
         private boolean value;
         public InstructionPushBool(boolean value) {
@@ -841,7 +816,6 @@ public class VirtualMachine {
             return "pushBool(" + value + ")";
         }
     }
-    
     private class InstructionPushReal implements MachineInstruction {
         private double value;
         public InstructionPushReal(double value) {
@@ -857,7 +831,6 @@ public class VirtualMachine {
             return "pushReal(" + value + ")";
         }
     }
-    
     private class InstructionPushChar implements MachineInstruction {
         private char value;
         public InstructionPushChar(char value) {
@@ -873,7 +846,6 @@ public class VirtualMachine {
             return "pushChar(" + value + ")";
         }
     }
-    
     private class InstructionPushString implements MachineInstruction {
         private String value;
         public InstructionPushString(String value) {
@@ -890,40 +862,47 @@ public class VirtualMachine {
         }
     }
     
-    private class InstructionPopAndStore implements MachineInstruction {
-        
+    // "desapilaDir"
+    private class InstructionPopStore implements MachineInstruction {
         private int addr;
-        
-        public InstructionPopAndStore(int addr) {
+        public InstructionPopStore(int addr) {
             this.addr = addr;  
         }
-        
         @Override
         public void execute() {
             memory[addr] = stack.pop();
             pc++;
         } 
-        
         @Override
         public String toString() {
             return "popAndStore(" + this.addr + ")";
         }
     }
     
-    private class InstructionLoadAndPush implements MachineInstruction {
-        
+    // "desapilaInd"
+    private InstructionPop2Store INSTRUCTION_POP2_STORE = new InstructionPop2Store();
+    private class InstructionPop2Store implements MachineInstruction {
+        @Override
+        public void execute() {
+            Value val = stack.pop();
+            int addr = stack.pop().getInt();
+            if(addr >= memory.length) {
+                Errors.printError(Errors.ERROR_INVALID_ADDRESS);
+                throw new VirtualMachineRuntimeException();
+            }
+            memory[addr] = val;
+            pc++;
+        }
+        @Override
+        public String toString() { return "pop2AndStore"; }
+    }
+    
+    // "apilaDir"
+    private class InstructionLoadPush implements MachineInstruction {
         private int addr;
-        private String linkToSource;
-        
-        public InstructionLoadAndPush(int addr) {
-          this(addr, null);  
+        public InstructionLoadPush(int addr) {
+            this.addr = addr;
         }
-        
-        public InstructionLoadAndPush(int addr, String linkToSource) {
-          this.linkToSource = linkToSource;  
-          this.addr = addr;  
-        }
-        
         @Override
         public void execute() {
             if(memory[addr] == null) { 
@@ -940,9 +919,81 @@ public class VirtualMachine {
         }
    }
     
+    // "apilaInd"
+    private InstructionPopLoadPush INSTRUCTION_POP_LOAD_PUSH = new InstructionPopLoadPush();
+    private class InstructionPopLoadPush implements MachineInstruction {
+        @Override
+        public void execute() {
+            int addr = stack.pop().getInt();
+            if(addr >= memory.length) {
+                Errors.printError(Errors.ERROR_INVALID_ADDRESS);
+                throw new VirtualMachineRuntimeException();
+            }
+            if(memory[addr] == null) {
+                Errors.printError(Errors.ERROR_UNINITIALIZED_MEMORY);
+                throw new VirtualMachineRuntimeException();
+            }
+            stack.push(memory[addr]);
+            pc++;
+        }
+        @Override
+        public String toString() { return "loadPopAndPush"; }
+    }
+    
+    private class InstructionAlloc implements MachineInstruction {
+        private int size;
+        public InstructionAlloc(int size) {
+            this.size = size;
+        }
+        @Override
+        public void execute() {
+            int first = dynamicMemoryManager.alloc(size);
+            stack.push(new ValueInt(first));
+            pc++;
+        }
+        @Override
+        public String toString() { return "alloc(" + size + ")"; }
+    }
+    private class InstructionDealloc implements MachineInstruction {
+        private int size;
+        public InstructionDealloc(int size) {
+            this.size = size;
+        }
+        @Override
+        public void execute() {
+            int first = stack.pop().getInt();
+            dynamicMemoryManager.free(first, size);
+            pc++;
+        }
+        @Override
+        public String toString() { return "dealloc(" + size + ")"; }
+    }
+    
+    private class InstructionCopy implements MachineInstruction {
+        private int size;
+        public InstructionCopy(int size) {
+            this.size = size;
+        }
+        @Override
+        public void execute() {
+            int addrFrom = stack.pop().getInt();
+            int addrTo = stack.pop().getInt();
+            if(addrFrom + size - 1 >= memory.length || addrTo + size - 1 >= memory.length) {
+                Errors.printError(Errors.ERROR_INVALID_ADDRESS);
+                throw new VirtualMachineRuntimeException();
+            }
+            for(int i = 0; i < size; i++) {
+                memory[addrFrom + i] = memory[addrTo + i];
+            }
+            pc++;
+        }
+        @Override
+        public String toString() { return "copy(" + size + ")"; }
+    }
+    
     /* IO instructions */
     
-    private InstructionWrite INSTRUCTION_WRITE; 
+    private InstructionWrite INSTRUCTION_WRITE = new InstructionWrite();
     private class InstructionWrite implements MachineInstruction {
         @Override
         public void execute() {
@@ -992,71 +1043,73 @@ public class VirtualMachine {
     }
     
     /* instruction constructors */
+    
+    // TODO instead of beeing constructors, these methods should add the
+    // corresponding instructions directly to the code ???
+    
+    // "apila"
+    public MachineInstruction pushInt(int val) { return new InstructionPushInt(val); }
+    public MachineInstruction pushBool(boolean val) { return new InstructionPushBool(val); }
+    public MachineInstruction pushReal(double val) { return new InstructionPushReal(val); }
+    public MachineInstruction pushChar(char val) { return new InstructionPushChar(val); }
+    public MachineInstruction pushString(String val) { return new InstructionPushString(val); }
+        
+    // "desapilaDir"
+    public MachineInstruction popStore(int addr) { return new InstructionPopStore(addr); }
+    // "desapilaInd"
+    public MachineInstruction pop2Store() { return INSTRUCTION_POP2_STORE; }
+    
+    // "apilaDir"
+    public MachineInstruction loadPush(int addr) { return new InstructionLoadPush(addr); }
+    // "apilaInd"
+    public MachineInstruction popLoadPush() { return INSTRUCTION_POP_LOAD_PUSH; }
+    
+    public MachineInstruction jump(int pos) { return new InstructionJump(pos); }
+    public MachineInstruction jumpIfFalse(int pos) { return new InstructionJumpIfFalse(pos); }
+    
+    public MachineInstruction alloc(int size) { return new InstructionAlloc(size); }
+    public MachineInstruction dealloc(int size) { return new InstructionDealloc(size); }
+    
+    public MachineInstruction copy(int size) { return new InstructionCopy(size); }
+    
+    public MachineInstruction write() { return INSTRUCTION_WRITE; }
+    public MachineInstruction read() { throw new UnsupportedOperationException(); }
 
-    // TODO: remove these two
-    public MachineInstruction mult() {return INSTRUCTION_MULT_INT;}   
-    public MachineInstruction add() {return INSTRUCTION_ADD_INT;}
-
-    public MachineInstruction addInt() {return INSTRUCTION_ADD_INT;}
-    public MachineInstruction addReal() {return INSTRUCTION_ADD_REAL;}
+    public MachineInstruction addInt() { return INSTRUCTION_ADD_INT; }
+    public MachineInstruction addReal() { return INSTRUCTION_ADD_REAL; }
     
-    public MachineInstruction multInt() {return INSTRUCTION_MULT_INT;}
-    public MachineInstruction multReal() {return INSTRUCTION_MULT_REAL;}
+    public MachineInstruction multInt() { return INSTRUCTION_MULT_INT; }
+    public MachineInstruction multReal() { return INSTRUCTION_MULT_REAL; }
     
-    public MachineInstruction subtInt() {return INSTRUCTION_SUBT_INT;}
-    public MachineInstruction subtReal() {return INSTRUCTION_SUBT_REAL;}
+    public MachineInstruction subtInt() { return INSTRUCTION_SUBT_INT; }
+    public MachineInstruction subtReal() { return INSTRUCTION_SUBT_REAL; }
     
-    public MachineInstruction divInt() {return INSTRUCTION_DIV_INT;}
-    public MachineInstruction divReal() {return INSTRUCTION_DIV_REAL;}
+    public MachineInstruction divInt() { return INSTRUCTION_DIV_INT; }
+    public MachineInstruction divReal() { return INSTRUCTION_DIV_REAL; }
     
-    public MachineInstruction rest() { return INSTRUCTION_REST; }
+    public MachineInstruction signChange() { return INSTRUCTION_SIGN_CHANGE; }
     
+    public MachineInstruction mod() { return INSTRUCTION_REST; }
     
-    public MachineInstruction equal() {return INSTRUCTION_EQUAL;}
-    public MachineInstruction equalPop1() {return INSTRUCTION_EQUAL_POP_1;}
-    public MachineInstruction unequal() {return INSTRUCTION_UNEQUAL;}
-    public MachineInstruction less() {return INSTRUCTION_LESS;}
-    public MachineInstruction lessEqual() {return INSTRUCTION_LESS_EQUAL;}
-    public MachineInstruction greater() {return INSTRUCTION_GREATER;}
-    public MachineInstruction greaterEqual() {return INSTRUCTION_GREATER_EQUAL;}
+    public MachineInstruction and() { return INSTRUCTION_AND; }
+    public MachineInstruction or() { return INSTRUCTION_OR; }
+    public MachineInstruction not() { return INSTRUCTION_NOT; }
     
-    public MachineInstruction and() {return INSTRUCTION_AND;}
-    public MachineInstruction or() {return INSTRUCTION_OR;}
-    public MachineInstruction not() {return INSTRUCTION_NOT;}
+    public MachineInstruction equal() { return INSTRUCTION_EQUAL; }
+    public MachineInstruction equalPop1() { return INSTRUCTION_EQUAL_POP1; }
+    public MachineInstruction unequal() { return INSTRUCTION_UNEQUAL; }
+    public MachineInstruction less() { return INSTRUCTION_LESS; }
+    public MachineInstruction lessEqual() { return INSTRUCTION_LESS_EQUAL; }
+    public MachineInstruction greater() { return INSTRUCTION_GREATER; }
+    public MachineInstruction greaterEqual() { return INSTRUCTION_GREATER_EQUAL; }
     
-    public MachineInstruction concatString() {return INSTRUCTION_CONCAT_STRING;}
-    public MachineInstruction chainElement() {return INSTRUCTION_CHAIN_ELEMENT;}
+    public MachineInstruction concatString() { return INSTRUCTION_CONCAT_STRING; }
+    public MachineInstruction chainElement() { return INSTRUCTION_CHAIN_ELEMENT; }
+      
+    public MachineInstruction convertInt() { return INSTRUCTION_CONVERT_INT; }
+    public MachineInstruction convertBool() { return INSTRUCTION_CONVERT_BOOL; }
+    public MachineInstruction convertReal() { return INSTRUCTION_CONVERT_REAL; }
+    public MachineInstruction convertChar() { return INSTRUCTION_CONVERT_CHAR; }
+    public MachineInstruction convertString() { return INSTRUCTION_CONVERT_STRING; }
     
-    public MachineInstruction signChange() {return INSTRUCTION_SIGN_CHANGE;}
-    
-    public MachineInstruction convertInt() {return INSTRUCTION_CONVERT_INT;}
-    public MachineInstruction convertBool() {return INSTRUCTION_CONVERT_BOOL;}
-    public MachineInstruction convertReal() {return INSTRUCTION_CONVERT_REAL;}
-    public MachineInstruction convertChar() {return INSTRUCTION_CONVERT_CHAR;}
-    public MachineInstruction convertString() {return INSTRUCTION_CONVERT_STRING;}
-    
-    
-    public MachineInstruction pushInt(int val) {return new InstructionPushInt(val);}
-    public MachineInstruction pushBool(boolean val) {return new InstructionPushBool(val);}
-    public MachineInstruction pushReal(double val) {return new InstructionPushReal(val);}
-    public MachineInstruction pushChar(char val) {return new InstructionPushChar(val);}
-    public MachineInstruction pushString(String val) {return new InstructionPushString(val);}
-    
-    public MachineInstruction popAndStore(int addr) {
-        return new InstructionPopAndStore(addr);
-    }
-    public MachineInstruction popAndStore() {
-        throw new UnsupportedOperationException(); 
-    }
-    public MachineInstruction loadAndPush(int addr, String linkToSource) {
-        return new InstructionLoadAndPush(addr, linkToSource);
-    }
-    public MachineInstruction move(int size) {
-        throw new UnsupportedOperationException(); 
-    }
-    
-    public MachineInstruction write() {return INSTRUCTION_WRITE;}
-    
-    public MachineInstruction jump(int pos) {return new InstructionJump(pos);}
-    public MachineInstruction jumpIfFalse(int pos) {return new InstructionJumpIfFalse(pos);}
 }

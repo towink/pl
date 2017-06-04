@@ -25,28 +25,9 @@ public abstract class Instruction
         return linkToSource;
     }
     public abstract void accept(Visitor v);
-
-    /**
-     * Represents an instructions which prints the value of a given expression.
-     */
-    public static class InstructionWrite extends Instruction {
-        private Exp exp;
-        public InstructionWrite(Exp exp) {
-            this(exp, null);
-        }
-        public InstructionWrite(Exp exp, String linkToSource) {
-            super(linkToSource);
-            this.exp = exp;
-        }
-        public Exp getExp() {
-            return exp;
-        }
-        @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
-    }
-
+    
+    /* instructions - general */
+    
     /**
      * Represents an assignment of an expression to a variable.
      */
@@ -90,8 +71,31 @@ public abstract class Instruction
             v.visit(this);
         }
     }
+    
+    /* instructions - IO */
 
-    /* instructions for memory management */
+    /**
+     * Represents an instructions which prints the value of a given expression.
+     */
+    public static class InstructionWrite extends Instruction {
+        private Exp exp;
+        public InstructionWrite(Exp exp) {
+            this(exp, null);
+        }
+        public InstructionWrite(Exp exp, String linkToSource) {
+            super(linkToSource);
+            this.exp = exp;
+        }
+        public Exp getExp() {
+            return exp;
+        }
+        @Override
+        public void accept(Visitor v) {
+            v.visit(this);
+        }
+    }
+
+    /* instructions - memory */
 
     /**
      *
@@ -135,7 +139,7 @@ public abstract class Instruction
         }
     }
 
-    /* control structures */
+    /* instructions - control structures */
 
     /**
      *

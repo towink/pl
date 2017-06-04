@@ -1,6 +1,7 @@
 package pl.type;
 
 import java.util.ArrayList;
+import java.util.List;
 import pl.abstractsyntax.Declaration.DeclarationType;
 import pl.procedures.Visitor;
 
@@ -166,6 +167,15 @@ public abstract class Type {
         public String getAlias() {
             return alias;
         }
+        public DefinedType referencedType() {
+            DefinedType res = decReferencedType.getType();
+            if(res.isReference()) {
+                return res.toRef().referencedType();
+            }
+            else {
+                return res;
+            }
+        }
         public DeclarationType getDecReferencedType() {
             return decReferencedType;
         }
@@ -212,12 +222,19 @@ public abstract class Type {
     /* records (structs) */
 
     public static class TypeRecord extends DefinedType {
-        private ArrayList<RecordField> fields;
-        public TypeRecord(ArrayList<RecordField> fields) {
+        private List<RecordField> fields;
+        public TypeRecord(List<RecordField> fields) {
             this.fields = fields;
         }
-        public ArrayList<RecordField> getFields() {
+        public List<RecordField> getFields() {
             return fields;
+        }
+        public List<String> getFieldIdentifiers() {
+            List<String> res = new ArrayList<>();
+            for(RecordField f : fields) {
+                res.add(f.getIdentifier());
+            }
+            return res;
         }
         public DefinedType typeOf(String identifier) {
             for(RecordField f : fields) {
@@ -246,6 +263,7 @@ public abstract class Type {
             public RecordField(String identifier, DefinedType type) {
                 this.identifier = identifier;
                 this.type = type;
+                fields.add(this);
             }
             public String getIdentifier() {
                 return identifier;
@@ -278,7 +296,7 @@ public abstract class Type {
         public void accept(Visitor v) { v.visit(this); }
         @Override
         public String toString() {
-            return "*" + baseType;
+            return "pointer to " + baseType;
         }
     }
 

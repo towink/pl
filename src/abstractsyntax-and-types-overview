@@ -1,0 +1,87 @@
+/* types */
+    /* types - definable */
+        /* types - definable - atomic */
+        /* types - definable - composed */
+
+
+/* program */
+
+/* declarations */
+
+/* instructions */
+    /* instructions - general */
+    /* instructions - IO */
+    /* instructions - memory */
+    /* instructions - control structures */
+
+
+/* expressions */
+    /* expressions - constants */
+    /* expressions - mems */
+    /* expressions - unary */
+        /* expressions - unary - arithmetic */
+        /* expressions - unary - logical */
+        /* expressions - unary - explicit type conversion */
+    /* binary expressions */
+        /* expressions - binary - miscellaneous */
+        /* expressions - binary - arithmetic */
+        /* expressions - binary - relational */
+        /* expressions - binary - logical */
+
+
+
+--------------------------------------------------------------------------------
+DETAILS:
+
+
+/* types */
+(Type, TypeOk, TypeError)
+    /* types - definable */
+    (DefinedType)
+        /* types - definable - atomic */
+        (TypeInt, TypeBool, TypeReal, TypeChar, TypeString)
+        /* types - definable - composed */
+        (TypeArray, TypePointer, TypeRecord, TypeRef)
+
+
+/* program */
+(Program)
+
+/* declarations */
+(DeclarationVariable, DeclarationType)
+
+/* instructions */
+    /* instructions - general */
+    (InstructionAssignment, InstructionBlock)
+    /* instructions - IO */
+    (InstructionWrite, InstructionRead)
+    /* instructions - memory */
+    (InstructionNew, InstructionFree)
+    /* instructions - control structures */
+    (InstructionIfThen, InstructionIfThenElse, InstructionSwitchm InstructionWhile)
+
+
+/* expressions */
+(Exp)
+    /* expressions - constants */
+    (Constant, ConstantInt, ConstantBool, ConstantReal, ConstantChar, ConstantString)
+    /* expressions - mems */
+    (Mem, Variable, Dereference, Select, Index)
+    /* expressions - unary */
+    (UnaryExp)
+        /* expressions - unary - arithmetic */
+        (SignChange)
+        /* expressions - unary - logical */
+        (Not)
+        /* expressions - unary - explicit type conversion */
+        (ConversionInt, ConversionBool, ConversionReal, ConversionChar, ConversionString)
+    /* binary expressions */
+    (BinaryExp)
+        /* expressions - binary - miscellaneous */
+        (ChainElement)
+        /* expressions - binary - arithmetic */
+        (BinaryArithmeticExp, Sum, Product, Quotient, Difference, Rest)
+        /* expressions - binary - relational */
+        (BinaryRelationalExp, Greater, GreaterEqual, Less, LessEqual, Equal, Unequal)
+        /* expressions - binary - logical */
+        (BinaryLogicalExp, And, Or)

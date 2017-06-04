@@ -99,6 +99,10 @@ public abstract class Declaration implements LinkToSource {
        public DefinedType getType() {
            return type;
        }
+       
+       public void setType(DefinedType type) {
+            this.type = type;
+        }
 
        public int getDir() {
            return dir;

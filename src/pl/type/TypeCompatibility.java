@@ -2,6 +2,7 @@ package pl.type;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import pl.type.Type.*;
 import pl.util.Pair;
@@ -15,6 +16,7 @@ import pl.util.Pair;
 public class TypeCompatibility {
     
     public static boolean check(Type t1, Type t2) {
+        // System.out.println("type checking: " + t1 + ", " + t2);
         return check(t1, t2, new HashSet<>());
     }
     
@@ -25,9 +27,16 @@ public class TypeCompatibility {
     ) {
         // check if the types have already been compared
         if(considered.add(new Pair<>(t1, t2))) {
+            
+            if(t1.isReference()) {
+                return check(t1.toRef().referencedType(), t2);
+            }
+            if(t2.isReference()) {
+                return check(t1, t2.toRef().referencedType());
+            }
 
             // equal base type
-            // we can use == because atomic types are singletons
+            // we can use '==' because atomic types are singletons
             if(t1 == t2) return true;
 
             // int and real are compatible
@@ -52,8 +61,8 @@ public class TypeCompatibility {
                 if(r1.getFields().size() != r2.getFields().size()) {
                     return false;
                 }
-                ArrayList<TypeRecord.RecordField> fields1 = r1.getFields();
-                ArrayList<TypeRecord.RecordField> fields2 = r2.getFields();
+                List<TypeRecord.RecordField> fields1 = r1.getFields();
+                List<TypeRecord.RecordField> fields2 = r2.getFields();
                 int size = fields1.size();
                 for(int i = 0; i < size; i++) {
                     // first check if the names are pairwise equal
@@ -74,20 +83,22 @@ public class TypeCompatibility {
             }
 
             // referenced types
-            if(t1.isReference() && t2.isReference()) {
+            /*if(t1.isReference() && t2.isReference()) {
                 TypeRef r1 = t1.toRef();
                 TypeRef r2 = t2.toRef();
                 return check(
                     r1.getDecReferencedType().getType(),
                     r2.getDecReferencedType().getType()
                 );
-            }
+            }*/
             
             // else the types are incompatible
             return false;
             
         }
-        // return true if the typed have already been compared
+        // return true if the types have already been compared
+        // TODO why? is this correct?
+        // because this can never be false because the recursive procedures would have returned false before??
         else {
             return true;
         }

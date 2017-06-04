@@ -1,0 +1,41 @@
+package pl.lex;
+
+%%
+
+%public
+%class MyLexer
+%type Token
+%ignorecase
+
+%{
+    // this code will be copied literally in the generated class
+%}
+
+%init{
+    // this code will be copied into the constructor class
+%init}
+
+%line
+%char
+
+LETTER = [A-Za-z]
+POSDIGIT = [1-9]
+DIGIT = (0|{POSDIGIT})
+WHITESPACE = [ \t\r\b\n]
+
+IDENT = {LETTER}+({DIGIT}|{LETTER})*
+
+CONSTINT = ({POSDIGIT}{DIGIT}*|0)
+
+DECIMALPART = \.(0|{DIGIT}*{POSDIGIT})
+EXPONENTIALPART = (e|E)-?{CONSTINT}
+CONSTREAL = {CONSTINT}({DECIMALPART}|{EXPONENTIALPART}|{DECIMALPART}{EXPONENTIALPART})
+
+NOSINGLEQUOTENOBSCHAR = [\x20-\x26\x28-\x5B\x5D-\x7E]
+HEXDIGIT = [0-9A-F]
+CONSTCHAR = '({NOSINGLEQUOTENOBSCHAR}|\\n|\\'|\\\|\\u{HEXDIGIT}{HEXDIGIT}{HEXDIGIT}{HEXDIGIT})'
+
+%%
+
+{IDENT}             {return new Token(LexicalClass.IDENT, yytext());}
+[^]                 {System.out.println("Error");}

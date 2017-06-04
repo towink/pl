@@ -64,6 +64,10 @@ public abstract class Mem extends Exp implements LinkToSource {
         public void accept(Visitor v) {
             v.visit(this); 
         }
+        @Override
+        public String toString() {
+            return name;
+        }
     }
     
     /**

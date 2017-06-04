@@ -155,7 +155,7 @@ public abstract class Exp extends AbstractSyntaxNode {
         }
     }
     
-    /* unary expressions - miscellaneous */
+    /* unary expressions - arithmetic */
     
     public static class SignChange extends UnaryExp {
 
