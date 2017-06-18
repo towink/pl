@@ -91,14 +91,14 @@ public class LinkingVisitor extends Visitor {
     @Override
     public void visit(DeclarationVariable dec) {
         // if the declared variable is already in the table --> error
-        if(symTabVars.containsKey(dec.getVar())) {
+        if(symTabVars.containsKey(dec.getIdent())) {
             error = true;
             Errors.printErrorFancy(
-                    dec, Errors.ERROR_ID_DUPLICATED + ": " + dec.getVar());
+                    dec, Errors.ERROR_ID_DUPLICATED + ": " + dec.getIdent());
         }
         // otherwise add new entry in table
         else {
-            symTabVars.put(dec.getVar(), dec);
+            symTabVars.put(dec.getIdent(), dec);
             // and process the type
             dec.getType().accept(this);
         }
@@ -107,14 +107,14 @@ public class LinkingVisitor extends Visitor {
     @Override
     public void visit(DeclarationType dec) {
         // if the declared variable is already in the table --> error
-        if(symTabTypes.containsKey(dec.getAlias())) {
+        if(symTabTypes.containsKey(dec.getIdent())) {
             error = true;
             Errors.printErrorFancy(
-                    dec, Errors.ERROR_ID_DUPLICATED + ": " + dec.getAlias());
+                    dec, Errors.ERROR_ID_DUPLICATED + ": " + dec.getIdent());
         }
         // otherwise add new entry in table
         else {
-            symTabTypes.put(dec.getAlias(), dec);
+            symTabTypes.put(dec.getIdent(), dec);
             // and process the type
             dec.getType().accept(this);
         }

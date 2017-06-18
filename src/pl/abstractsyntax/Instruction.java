@@ -3,6 +3,7 @@ package pl.abstractsyntax;
 import pl.procedures.Visitor;
 import pl.abstractsyntax.Exp.Constant;
 import pl.abstractsyntax.Declaration.*;
+import pl.abstractsyntax.Program.AbstractSyntaxNode;
 import java.util.ArrayList;
 
 /**
@@ -10,10 +11,12 @@ import java.util.ArrayList;
  * In general, an intruction is linkable to a position in the source code.
  */
 public abstract class Instruction
-        extends Program.AbstractSyntaxNode
+        extends AbstractSyntaxNode
         implements LinkToSource
 {
+    
     private String linkToSource;
+    
     public Instruction() {
         this.linkToSource = NO_LINK_PROVIDED;
     }
@@ -70,6 +73,40 @@ public abstract class Instruction
         public void accept(Visitor v) {
             v.visit(this);
         }
+    }
+    
+    public static class InstructionCall extends Instruction {
+        
+        private String identProc;
+        private Exp[] args;
+        private DeclarationProc decProc;
+
+        public InstructionCall(String identProc, Exp[] args) {
+            this.identProc = identProc;
+            this.args = args;
+        }
+
+        public InstructionCall(
+                String identProc,
+                Exp[] args,
+                String linkToSource
+        ) {
+            super(linkToSource);
+            this.identProc = identProc;
+            this.args = args;
+        }
+        
+        @Override
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public String getIdentProc() { return identProc; }
+        public Exp[] getArgs() { return args; }
+        public DeclarationProc getDecProc() { return decProc; }
+
+        public void setDecProc(DeclarationProc decProc) {
+            this.decProc = decProc;
+        }
+        
     }
     
     /* instructions - IO */

@@ -25,7 +25,7 @@ public class LexerTest {
           t = al.yylex();
           System.out.println(t);
         }
-        while(true);
+        while(t.getLexicalClass() != LexicalClass.EOF);
     }
     
 }

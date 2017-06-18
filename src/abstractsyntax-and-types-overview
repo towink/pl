@@ -48,11 +48,11 @@ DETAILS:
 (Program)
 
 /* declarations */
-(DeclarationVariable, DeclarationType)
+(DeclarationVariable, DeclarationType, DeclarationProc, DeclarationParam)
 
 /* instructions */
     /* instructions - general */
-    (InstructionAssignment, InstructionBlock)
+    (InstructionAssignment, InstructionBlock, InstructionCall)
     /* instructions - IO */
     (InstructionWrite, InstructionRead)
     /* instructions - memory */

@@ -156,14 +156,14 @@ public class PrintingVisitor extends Visitor {
     @Override
     public void visit(DeclarationVariable dec) {
         dec.getType().accept(this);
-        println(" " + dec.getVar() + ";");
+        println(" " + dec.getIdent() + ";");
     }
     
     @Override
     public void visit(DeclarationType dec) {
         print("typedef ");
         dec.getType().accept(this);
-        println(" " + dec.getAlias() + ";");
+        println(" " + dec.getIdent() + ";");
     }
 
     /* instructions */

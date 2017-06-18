@@ -9,11 +9,32 @@ package pl.lex;
 
 %{
     // this code will be copied literally in the generated class
+    
+    // line and char +1 because they are zero-based but I want them one-based.
+    private int line() {
+        return yyline + 1;
+    }
+    private int col() {
+        return yychar + 1;
+    }   
+
+    private Token token(LexicalClass lc) {
+        return new Token(lc, yytext(), line(), col());
+    }
+
+    // error printing function
+    private void error(String category, String detail) {
+        System.out.println("lexer error: " + line() + ", " + col() + ": " + category + ": " + detail);
+    }
 %}
 
 %init{
     // this code will be copied into the constructor class
 %init}
+
+%eofval{
+    return new Token(LexicalClass.EOF);
+%eofval}
 
 %line
 %char
@@ -31,11 +52,15 @@ DECIMALPART = \.(0|{DIGIT}*{POSDIGIT})
 EXPONENTIALPART = (e|E)-?{CONSTINT}
 CONSTREAL = {CONSTINT}({DECIMALPART}|{EXPONENTIALPART}|{DECIMALPART}{EXPONENTIALPART})
 
-NOSINGLEQUOTENOBSCHAR = [\x20-\x26\x28-\x5B\x5D-\x7E]
+NO_SINGLEQUOTE_NO_BS_CHAR = [\x20-\x26\x28-\x5B\x5D-\x7E]
 HEXDIGIT = [0-9A-F]
-CONSTCHAR = '({NOSINGLEQUOTENOBSCHAR}|\\n|\\'|\\\|\\u{HEXDIGIT}{HEXDIGIT}{HEXDIGIT}{HEXDIGIT})'
+CONSTCHAR = '({NO_SINGLEQUOTE_NO_BS_CHAR}|\\n|\\'|\\\|\\u{HEXDIGIT}{HEXDIGIT}{HEXDIGIT}{HEXDIGIT})'
 
 %%
 
-{IDENT}             {return new Token(LexicalClass.IDENT, yytext());}
-[^]                 {System.out.println("Error");}
+\n                  {yychar = -1;}
+0{DIGIT}+           {error(LexerError.ILLEGAL_NUMBER_FORMAT, LexerError.LEADING_ZERO);}
+{WHITESPACE}        {}
+{IDENT}             {return token(LexicalClass.IDENT);}
+{CONSTINT}          {return token(LexicalClass.CONSTINT);}
+.                   {error("bla", "blub");}

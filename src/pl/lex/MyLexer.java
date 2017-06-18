@@ -13,6 +13,20 @@ public class MyLexer {
 	private final int YY_EOF = 129;
 
     // this code will be copied literally in the generated class
+    // line and char +1 because they are zero-based but I want them one-based.
+    private int line() {
+        return yyline + 1;
+    }
+    private int col() {
+        return yychar + 1;
+    }   
+    private Token token(LexicalClass lc) {
+        return new Token(lc, yytext(), line(), col());
+    }
+    // error printing function
+    private void error(String category, String detail) {
+        System.out.println("lexer error: " + line() + ", " + col() + ": " + category + ": " + detail);
+    }
 	private java.io.BufferedReader yy_reader;
 	private int yy_buffer_index;
 	private int yy_buffer_read;
@@ -213,16 +227,21 @@ public class MyLexer {
 		/* 0 */ YY_NOT_ACCEPT,
 		/* 1 */ YY_NO_ANCHOR,
 		/* 2 */ YY_NO_ANCHOR,
-		/* 3 */ YY_NO_ANCHOR
+		/* 3 */ YY_NO_ANCHOR,
+		/* 4 */ YY_NO_ANCHOR,
+		/* 5 */ YY_NO_ANCHOR,
+		/* 6 */ YY_NO_ANCHOR,
+		/* 7 */ YY_NO_ANCHOR,
+		/* 8 */ YY_NO_ANCHOR
 	};
 	private int yy_cmap[] = unpackFromString(1,130,
-"3:48,2:10,3:7,1:26,3:6,1:26,3:5,0:2")[0];
+"6:8,4:2,1,6:2,4,6:18,4,6:15,2,3:9,6:7,5:26,6:6,5:26,6:5,0:2")[0];
 
-	private int yy_rmap[] = unpackFromString(1,4,
-"0,1,2,1")[0];
+	private int yy_rmap[] = unpackFromString(1,9,
+"0,1:2,2,1,3,1,2,4")[0];
 
-	private int yy_nxt[][] = unpackFromString(3,4,
-"1,2,3:2,-1:5,2:2,-1");
+	private int yy_nxt[][] = unpackFromString(5,7,
+"1,2,3,8,4,5,6,-1:9,7:2,-1:5,5:2,-1,5,-1:3,8:2,-1:3");
 
 	public Token yylex ()
 		throws java.io.IOException {
@@ -246,7 +265,8 @@ public class MyLexer {
 			yy_next_state = YY_F;
 			yy_next_state = yy_nxt[yy_rmap[yy_state]][yy_cmap[yy_lookahead]];
 			if (YY_EOF == yy_lookahead && true == yy_initial) {
-				return null;
+
+    return new Token(LexicalClass.EOF);
 			}
 			if (YY_F != yy_next_state) {
 				yy_state = yy_next_state;
@@ -273,12 +293,32 @@ public class MyLexer {
 					case -2:
 						break;
 					case 2:
-						{return new Token(LexicalClass.IDENT, yytext());}
+						{yychar = -1;}
 					case -3:
 						break;
 					case 3:
-						{System.out.println("Error");}
+						{return token(LexicalClass.CONSTINT);}
 					case -4:
+						break;
+					case 4:
+						{}
+					case -5:
+						break;
+					case 5:
+						{return token(LexicalClass.IDENT);}
+					case -6:
+						break;
+					case 6:
+						{error("bla", "blub");}
+					case -7:
+						break;
+					case 7:
+						{error(LexerError.ILLEGAL_NUMBER_FORMAT, LexerError.LEADING_ZERO);}
+					case -8:
+						break;
+					case 8:
+						{return token(LexicalClass.CONSTINT);}
+					case -9:
 						break;
 					default:
 						yy_error(YY_E_INTERNAL,false);

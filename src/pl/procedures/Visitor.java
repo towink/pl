@@ -66,6 +66,8 @@ public abstract class Visitor {
     public void visit(DeclarationType dec) {}
 
     /* instructions */
+    
+    /* instructions - general */
 
     public void visit(InstructionAssignment asg) { 
         asg.getMem().accept(this);
@@ -73,6 +75,9 @@ public abstract class Visitor {
     }
     public void visit(InstructionBlock block) {
         for(Instruction i : block.getInstructions()) i.accept(this);
+    }
+    public void visit(InstructionCall call) {
+        call.getBody().accept(this);
     }
 
     /* instructions - memory */
