@@ -7,7 +7,7 @@ import pl.abstractsyntax.Program.AbstractSyntaxNode;
 import java.util.ArrayList;
 
 /**
- * Base class for all types of instructions.
+ * Base class for all types of insts.
  * In general, an intruction is linkable to a position in the source code.
  */
 public abstract class Instruction
@@ -17,62 +17,74 @@ public abstract class Instruction
     
     private String linkToSource;
     
-    public Instruction() {
-        this.linkToSource = NO_LINK_PROVIDED;
-    }
+    public Instruction() { this.linkToSource = NO_LINK_PROVIDED; }
+    
     public Instruction(String linkToSource) {
         this.linkToSource = linkToSource;
     }
+    
     @Override
-    public String getLinkToSource() {
-        return linkToSource;
-    }
+    public String getLinkToSource() { return linkToSource; }
+    
     public abstract void accept(Visitor v);
     
-    /* instructions - general */
+    /* insttructions - general */
     
     /**
-     * Represents an assignment of an expression to a variable.
+     * Represents an assignment of an expression to a position in memory (for
+     * example a variable).
      */
     public static class InstructionAssignment extends Instruction {
+        
         private Exp exp;
         private Mem mem;
+        
         public InstructionAssignment(Mem mem, Exp exp) {
             this.exp = exp;
             this.mem = mem;
         }
+        
         public InstructionAssignment(Mem mem, Exp exp, String linkToSource) {
             super(linkToSource);
             this.exp = exp;
             this.mem = mem;
         }
-        public Exp getExp() {
-            return exp;
-        }
-        public Mem getMem() {
-            return mem;
-        }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Exp getExp() { return exp; }
+        public Mem getMem() { return mem; }
+        
     }
 
     /**
-     * Represents a block of instructions.
+     * Represents a block of insts.
      */
     public static class InstructionBlock extends Instruction {
-        private ArrayList<Instruction> instructions;
-        public InstructionBlock(ArrayList<Instruction> instructions) {
-            this.instructions = instructions;
+        
+        private Declaration[] decs;
+        private ArrayList<Instruction> insts;
+        
+        public InstructionBlock(ArrayList<Instruction> insts) {
+            this(new Declaration[0], insts);
         }
-        public ArrayList<Instruction> getInstructions() {
-            return instructions;
+        
+        public InstructionBlock(
+                Declaration[] decs,
+                ArrayList<Instruction> insts
+        ) {
+            this.decs = decs;
+            this.insts = insts;
         }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public ArrayList<Instruction> getInsts() { return insts; }
+        public Declaration[] getDecs() { return decs; }
+        
+        
     }
     
     public static class InstructionCall extends Instruction {
@@ -109,143 +121,178 @@ public abstract class Instruction
         
     }
     
-    /* instructions - IO */
+    /* insttructions - IO */
 
     /**
-     * Represents an instructions which prints the value of a given expression.
+     * Represents an instruction which prints the value of a given expression.
      */
     public static class InstructionWrite extends Instruction {
+        
         private Exp exp;
-        public InstructionWrite(Exp exp) {
-            this(exp, null);
-        }
+        
+        public InstructionWrite(Exp exp) { this.exp = exp; }
+        
         public InstructionWrite(Exp exp, String linkToSource) {
             super(linkToSource);
             this.exp = exp;
         }
-        public Exp getExp() {
-            return exp;
-        }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Exp getExp() { return exp; }
+        
     }
-
-    /* instructions - memory */
-
+    
     /**
-     *
+     * Represents an instruction which read a value from the console and stores 
+     * it in memory.
      */
-    public static class InstructionNew extends Instruction {
+    public static class InstructionRead extends Instruction {
+        
         private Mem mem;
-        public InstructionNew(Mem mem) {
+        
+        public InstructionRead(Mem mem) { this.mem = mem; }
+        
+        public InstructionRead(Mem mem, String linkToSource) {
+            super(linkToSource);
             this.mem = mem;
         }
+        
+        @Override
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Mem getMem() { return mem; }
+        
+    }
+
+    /* insttructions - memory */
+
+    /**
+     * Memory allocation instruction.
+     */
+    public static class InstructionNew extends Instruction {
+        
+        private Mem mem;
+        
+        public InstructionNew(Mem mem) { this.mem = mem; }
+        
         public InstructionNew(Mem mem, String linkToSource) {
             super(linkToSource);
             this.mem = mem;
         }
-        public Mem getMem() {
-            return mem;
-        }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Mem getMem() {return mem; }
+        
     }
 
     /**
-     *
+     * Memory deallocation instruction.
      */
     public static class InstructionFree extends Instruction {
+        
         private Mem mem;
-        public InstructionFree(Mem mem) {
-            this.mem = mem;
-        }
+        
+        public InstructionFree(Mem mem) { this.mem = mem; }
+        
         public InstructionFree(Mem mem, String linkToSource) {
             super(linkToSource);
             this.mem = mem;
         }
-        public Mem getMem() {
-            return mem;
-        }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Mem getMem() { return mem; }
+        
     }
 
-    /* instructions - control structures */
+    /* insttructions - control structures */
 
     /**
-     *
+     * Instruction representing a while loop.
      */
     public static class InstructionWhile extends Instruction {
+        
         private Exp condition;
         private Instruction body;
+        
         public InstructionWhile(Exp condition, Instruction body) {
             this.condition = condition;
             this.body = body;
         }
-        public InstructionWhile(Exp condition, Instruction body, String linkToSource) {
+        
+        public InstructionWhile(
+                Exp condition,
+                Instruction body,
+                String linkToSource
+        ) {
             super(linkToSource);
             this.condition = condition;
             this.body = body;
         }
-        public Exp getCondition() {
-            return condition;
-        }
-        public Instruction getBody() {
-            return body;
-        }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Exp getCondition() { return condition; }
+        public Instruction getBody() { return body; }
+        
     }
 
     /**
-     *
+     * Instruction representing an if-then statement.
      */
     public static class InstructionIfThen extends Instruction {
+        
         private Exp condition;
         private Instruction body;
+        
         public InstructionIfThen(Exp condition, Instruction body) {
             this.condition = condition;
             this.body = body;
         }
-        public InstructionIfThen(Exp condition, Instruction body, String linkToSource) {
+        
+        public InstructionIfThen(
+                Exp condition,
+                Instruction body,
+                String linkToSource
+        ) {
             super(linkToSource);
             this.condition = condition;
             this.body = body;
         }
-        public Exp getCondition() {
-            return condition;
-        }
-        public Instruction getBody() {
-            return body;
-        }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Exp getCondition() { return condition; }
+        public Instruction getBody() { return body; }
+        
     }
 
     /**
-     *
+     * Instruction representing an if-then-else statement.
      */
     public static class InstructionIfThenElse extends Instruction {
+        
         private Exp condition;
         private Instruction body1;
         private Instruction body2;
+        
         public InstructionIfThenElse(
                 Exp condition,
                 Instruction body1,
                 Instruction body2
         ) {
-            this(condition, body1, body2, null);
+            this.condition = condition;
+            this.body1 = body1;
+            this.body2 = body2;
         }
+        
         public InstructionIfThenElse(
                 Exp condition,
                 Instruction body1,
@@ -257,28 +304,25 @@ public abstract class Instruction
             this.body1 = body1;
             this.body2 = body2;
         }
-        public Exp getCondition() {
-            return condition;
-        }
-        public Instruction getBodyIf() {
-            return body1;
-        }
-        public Instruction getBodyElse() {
-            return body2;
-        }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Exp getCondition() { return condition; }
+        public Instruction getBodyIf() { return body1; }
+        public Instruction getBodyElse() { return body2; }
+        
     }
 
     /**
-     *
+     * Instrcution representing the switch statement.
      */
     public static class InstructionSwitch extends Instruction {
+        
         private Exp exp;
         private ArrayList<Case> cases;
         private Instruction defaultInst;
+        
         public InstructionSwitch(
                 Exp exp,
                 ArrayList<Case> cases,
@@ -290,52 +334,50 @@ public abstract class Instruction
             this.cases = cases;
             this.defaultInst = defaultInst;
         }
+        
         public InstructionSwitch(
                 Exp exp,
                 ArrayList<Case> cases,
                 Instruction defaultInst
         ) {
-            this(exp, cases, defaultInst, null);
+            this.exp = exp;
+            this.cases = cases;
+            this.defaultInst = defaultInst;
         }
+        
         public static class Case implements LinkToSource {
+            
             private Constant literal;
             private Instruction inst;
             private String linkToSource;
+            
+            public Case(Constant c, Instruction inst) {
+                this(c, inst, NO_LINK_PROVIDED);
+            }
+            
             public Case(Constant c, Instruction inst, String linkToSource) {
                 this.literal = c;
                 this.inst = inst;
                 this.linkToSource = linkToSource;
             }
-            public Case(Constant c, Instruction inst) {
-                this(c, inst, null);
-            }
-            public Constant getLiteral() {
-                return literal;
-            }
-            public Instruction getInst() {
-                return inst;
-            }
+            
             @Override
-            public String getLinkToSource() {
-                return linkToSource;
-            }
+            public String getLinkToSource() { return linkToSource; }
+            
+            public Constant getLiteral() { return literal; }
+            public Instruction getInst() { return inst; }
+            
         }
-        public void setCases(ArrayList<Case> cases) {
-            this.cases = cases;
-        }
-        public Exp getExp() {
-            return exp;
-        }
-        public Instruction getDefaultInst() {
-            return defaultInst;
-        }
-        public ArrayList<Case> getCases() {
-            return cases;
-        }
+        
         @Override
-        public void accept(Visitor v) {
-            v.visit(this);
-        }
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Exp getExp() { return exp; }
+        public Instruction getDefaultInst() { return defaultInst; }
+        public ArrayList<Case> getCases() { return cases; }
+        
+        public void setCases(ArrayList<Case> cases) { this.cases = cases; }
+        
     }
 
 }

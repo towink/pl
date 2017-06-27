@@ -3,6 +3,7 @@ package pl.type;
 import java.util.ArrayList;
 import java.util.List;
 import pl.abstractsyntax.Declaration.DeclarationType;
+import pl.abstractsyntax.LinkToSource;
 import pl.procedures.Visitor;
 
 /**
@@ -157,13 +158,26 @@ public abstract class Type {
 
     /* type references */
 
-    public static class TypeRef extends DefinedType {
+    public static class TypeRef extends DefinedType implements LinkToSource {
+        
+        private String linkToSource;
         private String alias;
         private DeclarationType decReferencedType;
 
         public TypeRef(String alias) {
+            linkToSource = null;
             this.alias = alias;
         }
+        
+        public TypeRef(String alias, String linkToSource) {
+            this.linkToSource = linkToSource;
+            this.alias = alias;
+        }
+        
+        
+        @Override
+        public String getLinkToSource() { return linkToSource; }
+        
         public String getAlias() {
             return alias;
         }

@@ -1,5 +1,7 @@
 package pl.procedures.codegeneration;
 
+import pl.abstractsyntax.Declaration.DeclarationParam;
+import pl.abstractsyntax.Exp;
 import pl.abstractsyntax.Exp.*;
 import pl.abstractsyntax.Mem.*;
 import pl.abstractsyntax.Instruction;
@@ -8,6 +10,8 @@ import pl.procedures.Visitor;
 import pl.type.Type;
 
 /**
+ * Visitor labeling instructions with their corresponding lines of machine code.
+ * 
  * MUST BE CALLED AFTER TYPE CHECK!
  */
 public class LabelingVisitor extends Visitor {
@@ -33,10 +37,23 @@ public class LabelingVisitor extends Visitor {
     @Override
     public void visit(InstructionBlock block) {
         block.setFirstInstruction(label);
-        for(Instruction inst : block.getInstructions()) {
+        for(Instruction inst : block.getInsts()) {
             inst.accept(this);
         }
         block.setNextInstruction(label);
+    }
+    
+    @Override
+    public void visit(InstructionCall call) {
+        call.setFirstInstruction(label);
+        label++; // activate
+        for(Exp arg : call.getArgs()) {
+            label += 3; // dup, pushInt, sum
+            arg.accept(this);
+            label++; // pop2store or copy
+        }
+        label += 2; // setD, jump
+        call.setNextInstruction(label);
     }
     
     /* instructions - IO */

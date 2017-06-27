@@ -50,7 +50,7 @@ public class CodeGenerationVisitor extends Visitor {
     
     @Override
     public void visit(InstructionBlock block) {
-        for(Instruction inst : block.getInstructions()) {
+        for(Instruction inst : block.getInsts()) {
             inst.accept(this);
         }
     }

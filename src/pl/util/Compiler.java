@@ -35,15 +35,13 @@ public class Compiler {
         }
         
         /* LINKING */
-        LinkingVisitor linker = new LinkingVisitor();
-        System.out.print("linking ... ");
+        LinkingVisitor linker = new LinkingVisitor(true);
+        System.out.print("linking ...\n");
         p.accept(linker);
         if(linker.isError())
             System.out.println("linker detected error, aborting\n");
         else {
             System.out.println("linking complete.");
-            System.out.println("linked variables: " + linker.getSymTabVars().keySet());
-            System.out.println("linked types: " + linker.getSymTabTypes().keySet());
             System.out.println();
         }
         

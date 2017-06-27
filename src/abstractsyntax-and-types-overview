@@ -22,7 +22,7 @@
         /* expressions - unary - arithmetic */
         /* expressions - unary - logical */
         /* expressions - unary - explicit type conversion */
-    /* binary expressions */
+    /* expressions - binary */
         /* expressions - binary - miscellaneous */
         /* expressions - binary - arithmetic */
         /* expressions - binary - relational */

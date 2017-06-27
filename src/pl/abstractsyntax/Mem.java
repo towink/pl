@@ -38,7 +38,6 @@ public abstract class Mem extends Exp implements LinkToSource {
     }
     
     /**
-     * TODO rename this to variable an remove other class
      */
     public static class Variable extends Mem {
         private String name;
@@ -71,10 +70,9 @@ public abstract class Mem extends Exp implements LinkToSource {
     }
     
     /**
-     *
+     * mem[exp]
      */
     public static class Index extends Mem {
-        // mem[exp]
         private Mem mem;
         private Exp exp;
         public Index(Mem mem, Exp exp) {
@@ -99,10 +97,9 @@ public abstract class Mem extends Exp implements LinkToSource {
     }
     
     /**
-     *
+     * mem.field
      */
     public static class Select extends Mem {
-        // mem.field
         private Mem mem;
         private String field;
         public Select(Mem mem, String field) {
@@ -127,10 +124,9 @@ public abstract class Mem extends Exp implements LinkToSource {
     }
     
     /**
-     *
+     * *mem
      */
     public static class Dereference extends Mem {
-        // *mem
         private Mem mem;
         public Dereference(Mem mem) {
             this.mem = mem;

@@ -42,7 +42,10 @@ public abstract class Visitor {
     /* types - definable - composed */
 
     public void visit(TypeArray type) { type.getBaseType().accept(this); }
-    public void visit(TypePointer type) { type.getBaseType().accept(this); }
+    public void visit(TypePointer type) {
+        // no default behaviour here because of cyclic type definitions!!
+        //type.getBaseType().accept(this);
+    }
     public void visit(TypeRecord type) {
         for(TypeRecord.RecordField f : type.getFields())
             f.getType().accept(this);
@@ -61,9 +64,18 @@ public abstract class Visitor {
     /* declarations */
 
     public void visit(Declaration dec) {}
-    // no default behaviour here because of cyclic type definitions
-    public void visit(DeclarationVariable dec) {}
-    public void visit(DeclarationType dec) {}
+    public void visit(DeclarationVariable dec) {
+        dec.getType().accept(this);
+    }
+    public void visit(DeclarationType dec) {
+        dec.getType().accept(this);
+    }
+    public void visit(DeclarationProc dec) {
+        for(DeclarationParam decPar : dec.getParams()) { 
+            decPar.accept(this);
+        }
+        dec.getBody().accept(this);
+    }
 
     /* instructions */
     
@@ -74,10 +86,17 @@ public abstract class Visitor {
         asg.getExp().accept(this);
     }
     public void visit(InstructionBlock block) {
-        for(Instruction i : block.getInstructions()) i.accept(this);
+        for(Declaration dec : block.getDecs()) {
+            dec.accept(this);
+        }
+        for(Instruction i : block.getInsts()) {
+            i.accept(this);
+        }
     }
     public void visit(InstructionCall call) {
-        call.getBody().accept(this);
+        for(Exp arg : call.getArgs()) {
+            arg.accept(this);
+        }
     }
 
     /* instructions - memory */
@@ -88,8 +107,7 @@ public abstract class Visitor {
     /* instructions - IO*/
 
     public void visit(InstructionWrite inst) { inst.getExp().accept(this); }
-
-    // TODO read ...
+    public void visit(InstructionRead inst) { inst.getMem().accept(this); }
 
     /* instructions - control structures */
 

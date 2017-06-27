@@ -186,7 +186,7 @@ public class PrintingVisitor extends Visitor {
         indent();
         println("{");
         currIndent += INDENTATION_DEPTH;
-        for(Instruction i : block.getInstructions())
+        for(Instruction i : block.getInsts())
             i.accept(this);
         currIndent -= INDENTATION_DEPTH;
         indent();

@@ -23,6 +23,12 @@ public abstract class Declaration implements LinkToSource {
         this.link = link;
     }
     
+    public boolean isDecProc() { return false; }
+    
+    public DeclarationProc toDecProc() {
+        throw new UnsupportedOperationException();
+    }
+    
     /**
      * Accepts a visitor on this declaration viewed as a node in the
      * program tree.
@@ -72,7 +78,7 @@ public abstract class Declaration implements LinkToSource {
        /**
         * Reduced constructor without link to source.
         * 
-        * @param var Name of the variable to ne declared.
+        * @param ident Name of the variable to ne declared.
         * @param type Type of the new variable.
         * @throws IllegalArgumentException If the type is not valid.
         */
@@ -139,6 +145,12 @@ public abstract class Declaration implements LinkToSource {
             this.params = params;
             this.body = body;
         }
+        
+        @Override
+        public boolean isDecProc() { return true; }
+        
+        @Override
+        public DeclarationProc toDecProc() { return this; }
         
         @Override
         public void accept(Visitor v) { v.visit(this); }

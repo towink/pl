@@ -3,6 +3,7 @@ package pl.procedures.types;
 import pl.abstractsyntax.Program;
 import pl.abstractsyntax.Declaration;
 import pl.abstractsyntax.Declaration.*;
+import pl.abstractsyntax.Instruction.InstructionBlock;
 import pl.procedures.Visitor;
 import pl.type.Type.*;
 
@@ -46,16 +47,12 @@ public class TypeSizeCalculationVisitor extends Visitor {
     public void visit(TypePointer type) {
         // pointers have constant size of 1
         type.setSize(1);
-        // do not follow pointers - size is always 1
-        /*
-        if(!type.getBaseType().isReference()) {
-            type.getBaseType().accept(this);
-        }
-        */
     }
 
     @Override
     public void visit(TypeRef type) {
+        // TODO size of type.getDecReferencedType().getType() must be known
+        // at this point, otherwise error!! why??
         type.getDecReferencedType().getType().accept(this);
         type.setSize(type.getDecReferencedType().getType().getSize());
     }
@@ -66,6 +63,17 @@ public class TypeSizeCalculationVisitor extends Visitor {
     public void visit(Program prog) {
         // it is sufficient to go only through the programs declaration section
         for(Declaration dec : prog.getDeclarations()) dec.accept(this);
+    }
+    
+    /* instructions */
+    
+    /* instructions - general */
+    @Override
+    public void visit(InstructionBlock block) {
+        // for blocks only apply this visitor to declaration section
+        for(Declaration dec : block.getDecs()) {
+            dec.accept(this);
+        }
     }
 
     /* declarations */
