@@ -6,8 +6,8 @@ import pl.abstractsyntax.Mem.*;
 import pl.abstractsyntax.Program;
 import pl.abstractsyntax.Declaration;
 import pl.abstractsyntax.Declaration.*;
-import pl.abstractsyntax.Instruction;
-import pl.abstractsyntax.Instruction.*;
+import pl.abstractsyntax.Inst;
+import pl.abstractsyntax.Inst.*;
 import pl.abstractsyntax.Program.AbstractSyntaxNode;
 import pl.procedures.Visitor;
 import pl.type.Type.*;
@@ -47,7 +47,7 @@ public class PrintingVisitor extends Visitor {
         if(attributes) {
             print(
                 "{" +
-                node.getType() + "," +
+                //node.getType() + "," +
                 node.getFirstInstruction() + "," +
                 node.getNextInstruction() +
                 "}"
@@ -186,7 +186,7 @@ public class PrintingVisitor extends Visitor {
         indent();
         println("{");
         currIndent += INDENTATION_DEPTH;
-        for(Instruction i : block.getInsts())
+        for(Inst i : block.getInsts())
             i.accept(this);
         currIndent -= INDENTATION_DEPTH;
         indent();

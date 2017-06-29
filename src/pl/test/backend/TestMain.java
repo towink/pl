@@ -10,9 +10,12 @@ public class TestMain {
     
     public static void main(String[] args) {
         
+        System.out.println("\\\"");
+        System.exit(0);
+        
         // create test programs
-        //tests.add(new Test1());
-        tests.add(new Test2());
+        tests.add(new Test1());
+        //tests.add(new Test2());
         
         // run all tests
         for(Program test : tests) {

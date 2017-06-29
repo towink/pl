@@ -75,7 +75,7 @@ DETAILS:
         (Not)
         /* expressions - unary - explicit type conversion */
         (ConversionInt, ConversionBool, ConversionReal, ConversionChar, ConversionString)
-    /* binary expressions */
+    /* expressions - binary */
     (BinaryExp)
         /* expressions - binary - miscellaneous */
         (ChainElement)

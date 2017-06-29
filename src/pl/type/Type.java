@@ -64,15 +64,20 @@ public abstract class Type {
         public DefinedType() {
             size = 0;
         }
-
-        public int getSize() {
-            return size;
-        }
-        public void setSize(int size) {
-            this.size = size;
-        }
+        
+        
         @Override
         public void accept(Visitor v) { v.visit(this); }
+        
+        public boolean sizeNotSet() { return size == 0; }
+
+        public int getSize() { return size; }
+        public void setSize(int size) {
+            if(size < 1) {
+                throw new IllegalArgumentException();
+            }
+            this.size = size;
+        }
     }
     
     public static abstract class AtomicDefinedType extends DefinedType {}
@@ -256,6 +261,12 @@ public abstract class Type {
             }
             throw new IllegalArgumentException("there is no field " + identifier);
         }
+        public RecordField getFieldByIndet(String identifier) {
+            for(RecordField f : fields) {
+                if(f.identifier.equals(identifier)) return f;
+            }
+            throw new IllegalArgumentException("there is no field " + identifier);
+        }
         @Override
         public boolean isRecord() { return true; }
         @Override
@@ -274,17 +285,17 @@ public abstract class Type {
         public class RecordField {
             private String identifier;
             private DefinedType type;
+            private int offset;
             public RecordField(String identifier, DefinedType type) {
                 this.identifier = identifier;
                 this.type = type;
+                offset = 0;
                 fields.add(this);
             }
-            public String getIdentifier() {
-                return identifier;
-            }
-            public DefinedType getType() {
-                return type;
-            }
+            public String getIdentifier() { return identifier; }
+            public DefinedType getType() { return type; }
+            public int getOffset() { return offset; }
+            public void setOffset(int offset) { this.offset = offset; }
             @Override
             public String toString() {
                 return type + " " + identifier;

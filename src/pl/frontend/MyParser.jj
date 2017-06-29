@@ -1,0 +1,640 @@
+options  {
+    STATIC = false;
+}
+
+PARSER_BEGIN(MyParser)
+package pl.frontend;
+
+
+import pl.abstractsyntax.AbstractSyntaxConstructors;
+import pl.abstractsyntax.AbstractSyntaxConstructors.*;
+import pl.abstractsyntax.Declaration;
+import pl.abstractsyntax.Declaration.*;
+import pl.abstractsyntax.Exp;
+import pl.abstractsyntax.Inst;
+import pl.abstractsyntax.Inst.InstructionSwitch.Case;
+import pl.abstractsyntax.Program;
+import pl.type.Type.*;
+
+
+
+class ProcHeader {
+   public String ident;
+   public ParamList params;
+   public ProcHeader(String ident, ParamList params) {
+      this.ident = ident;
+      this.params = params;
+   }
+}
+
+public class MyParser {
+    private AbstractSyntaxConstructors ops;
+    public void setOps(AbstractSyntaxConstructors ops) {
+        this.ops = ops;
+    }
+    String linkToSource(Token token) {
+        return "( " + token.beginLine + ", " + token.beginColumn + " )";
+    }
+}
+PARSER_END(MyParser)
+
+SKIP:{<["\t"," ","\r","\b","\n"]>}
+SKIP:{<"//"(~["\n"])*>} 
+
+TOKEN:{<#letter:["a"-"z","A"-"Z"]>}
+TOKEN:{<#positiveDigit:["1"-"9"]>}
+TOKEN:{<#digit:(<positiveDigit>)|"0">}
+TOKEN:{<#decimalPart:"."("0"|(<digit>)*(<positiveDigit>))>}
+TOKEN:{<#exponentialPart:("e"|"E")("-")?(<positiveDigit>)>}
+TOKEN:{<#hexDigit:(<digit>)|["A"-"F"]>}
+
+TOKEN:{<TRUE:("t"|"T")("r"|"R")("u"|"U")("e"|"E")>}
+TOKEN:{<FALSE:("f"|"F")("a"|"A")("l"|"L")("s"|"S")("e"|"E")>}
+TOKEN:{<INT:("i"|"I")("n"|"N")("t"|"T")>}
+TOKEN:{<BOOL:("b"|"B")("o"|"O")("o"|"O")("l"|"L")>}
+TOKEN:{<FLOAT:("f"|"F")("l"|"L")("o"|"O")("a"|"A")("t"|"T")>}
+TOKEN:{<CHAR:("c"|"C")("h"|"H")("a"|"A")("r"|"R")>}
+TOKEN:{<STRING:("s"|"S")("t"|"T")("r"|"R")("i"|"I")("n"|"N")("g"|"G")>}
+TOKEN:{<STRUCT:("s"|"S")("t"|"T")("r"|"R")("u"|"U")("c"|"C")("t"|"T")>}
+TOKEN:{<TYPE:("t"|"T")("y"|"Y")("p"|"P")("e"|"E")>}
+TOKEN:{<VAR:("v"|"V")("a"|"A")("r"|"R")>}
+TOKEN:{<WHILE:("w"|"W")("h"|"H")("i"|"I")("l"|"L")("e"|"E")>}
+TOKEN:{<DO:("d"|"D")("o"|"O")>}
+TOKEN:{<IF:("i"|"I")("f"|"F")>}
+TOKEN:{<THEN:("t"|"T")("h"|"H")("e"|"E")("n"|"N")>}
+TOKEN:{<ELSE:("e"|"E")("l"|"L")("s"|"S")("e"|"E")>}
+TOKEN:{<SWITCH:("s"|"S")("w"|"W")("i"|"I")("t"|"T")("h"|"H")>}
+TOKEN:{<CASE:("c"|"C")("a"|"A")("s"|"S")("e"|"E")>}
+TOKEN:{<DEFAULTINST:("d"|"D")("e"|"E")("f"|"F")("a"|"A")("u"|"U")("l"|"L")("t"|"T")>}
+TOKEN:{<PROC:("p"|"P")("r"|"R")("o"|"O")("c"|"C")>}
+TOKEN:{<CALL:("c"|"C")("a"|"A")("l"|"L")("l"|"L")>}
+TOKEN:{<WITH:("w"|"W")("i"|"I")("t"|"T")("h"|"H")>}
+TOKEN:{<NULL:("n"|"N")("u"|"U")("l"|"L")("l"|"L")>}
+TOKEN:{<NEW:("n"|"N")("e"|"E")("w"|"W")>}
+TOKEN:{<DELETE:("d"|"D")("e"|"E")("l"|"L")("e"|"E")("t"|"T")("e"|"E")>}
+TOKEN:{<READ:("r"|"R")("e"|"E")("a"|"A")("d"|"D")>}
+TOKEN:{<WRITE:("w"|"W")("r"|"R")("i"|"I")("t"|"T")("e"|"E")>}
+
+TOKEN:{<ident:(<letter>)((<letter>)|(<digit>))*>}
+TOKEN:{<intLiteral:(<positiveDigit>)(<digit>)*|"0">}
+TOKEN:{<realLiteral:(<intLiteral>)((<decimalPart>)(<exponentialPart>)?|(<exponentialPart>))>}
+TOKEN:{<charLiteral:"'"(~["\\","'"]|"\\n"|"\\'"|"\\\\"|"\\u"(<hexDigit>)(<hexDigit>)(<hexDigit>)(<hexDigit>))"'">}
+TOKEN:{<stringLiteral:"\""(~["\\","\""]|"\\n"|"\\\""|"\\\\"|"\\u"(<hexDigit>)(<hexDigit>)(<hexDigit>)(<hexDigit>))*"\"">}
+
+
+void nStart():
+    {}
+    {
+        nProg() <EOF>
+    }
+
+
+Program nProg():
+    {DecList decs; Inst inst;}
+    {
+        decs = nDecs() inst = nInst()
+            {return ops.prog(decs, inst);}
+    }
+
+void nOptSemicolon():
+    {}
+    {
+        ";"
+        |
+        {}
+    }
+
+DecList nDecs():
+    {DecList decs;}
+    {
+        decs = nDecList()
+            {return decs;}
+        |
+            {return ops.noDecs();}
+    }
+
+DecList nDecList():
+    {Declaration dec; DecList decs;}
+    {
+        dec = nDec() decs = nRDecList(ops.decs(ops.noDecs(), dec))
+            {return decs;}
+    }
+
+DecList nRDecList(DecList decsh):
+    {Declaration dec; DecList decs;}
+    {
+        dec = nDec() decs = nRDecList(ops.decs(decsh, dec))
+            {return decs;}
+        |
+            {return decsh;}
+    }
+
+Declaration nDec():
+    {DefinedType type; Token id; ProcHeader header; Inst block; Token proc;}
+    {
+        <VAR> type = nType0() id = <ident> nOptSemicolon()
+            {return ops.decVar(type, id.image, linkToSource(id));}
+        |
+        <TYPE> type = nType0() id = <ident> ";"
+            {return ops.decVar(type, id.image, linkToSource(id));}
+        |
+        proc = <PROC> header = nProcHeader() block = nBlock() nOptSemicolon()
+            {return ops.decProc(header.ident, header.params, block, linkToSource(proc));}
+    }
+
+ProcHeader nProcHeader():
+    {Token id; ParamList params;}
+    {
+        id = <ident> "(" params = nParams() ")"
+            {return new ProcHeader(id.image, params);}
+    }
+
+ParamList nParams():
+    {ParamList params;}
+    {
+        params = nParamList()
+            {return params;}
+        |
+            {return ops.noParams();}
+    }
+
+ParamList nParamList():
+    {DeclarationParam param; ParamList params;}
+    {
+        param = nParam() params = nRParamList(ops.params(ops.noParams(), param))
+            {return params;}
+    }
+
+ParamList nRParamList(ParamList paramsh):
+    {DeclarationParam param; ParamList params;}
+    {
+        "," param = nParam() params = nRParamList(ops.params(paramsh, param))
+            {return params;}
+        |
+            {return paramsh;}
+    }
+
+DeclarationParam nParam():
+    {DefinedType type; boolean mode; Token id;}
+    {
+        type = nType0() mode = nMode() id = <ident>
+            {return ops.decParam(type, mode, id.image, linkToSource(id));}
+    }
+
+boolean nMode():
+    {}
+    {
+        "&"
+            {return true;}
+        |
+            {return false;}
+    }
+
+DefinedType nType0():
+    {DefinedType t; DefinedType tt;}
+    {
+        t = nType1() tt = nRType0(t)
+            {return tt;}
+    }
+
+DefinedType nRType0(DefinedType th):
+    {DefinedType t; Token n;}
+    {
+        "*" t = nRType0(ops.typePointer(th))
+            {return t;}
+        |
+        "[" n = <intLiteral> "]" t = nRType0(ops.typeArray(th, ops.toInt(n.image)))
+            {return t;}
+        |
+            {return th;}
+    }
+
+FieldList nFieldList():
+    {DefinedType t; Token id; FieldList fields;}
+    {
+        t = nType0() id = <ident> ";" fields = nRFieldList(ops.oneField(ops.field(t, id.image)))
+            {return fields;}
+    }
+
+FieldList nRFieldList(FieldList fieldsh):
+    {DefinedType t; Token id; FieldList fields;}
+    {
+        t = nType0() id = <ident> ";" fields = nRFieldList(ops.fields(fieldsh, ops.field(t, id.image)))
+            {return fields;}
+        |
+            {return fieldsh;}
+    }
+
+DefinedType nType1():
+    {FieldList fields; Token id;}
+    {
+        <STRUCT> "{" fields = nFieldList() "}"
+            {return ops.typeRecord(fields);}
+        |
+        id = <ident>
+            {return ops.typeRef(id.image);}
+        |
+        <INT>
+            {return ops.typeInt();}
+        |
+        <BOOL>
+            {return ops.typeBool();}
+        |
+        <FLOAT>
+            {return ops.typeReal();}
+        |
+        <CHAR>
+            {return ops.typeChar();}
+        |
+        <STRING>
+            {return ops.typeString();}
+        
+    }
+
+Inst nBlock():
+    {DecList decs; InstList insts;}
+    {
+        "{" decs = nDecs() insts = nInsts() "}"
+            {return ops.block(decs, insts);}
+    }
+
+
+
+InstList nInsts():
+    {InstList insts;}
+    {
+        insts = nInstList()
+            {return insts;}
+        |
+            {return ops.noInsts();}
+    }
+
+InstList nInstList():
+    {Inst inst; InstList insts;}
+    {
+        inst = nInst() insts = nRInstList(ops.insts(ops.noInsts(), inst))
+            {return insts;}
+    }
+
+InstList nRInstList(InstList instsh):
+    {Inst inst; InstList insts;}
+    {
+        inst = nInst() insts = nRInstList(ops.insts(instsh, inst))
+            {return insts;}
+        |
+            {return instsh;}
+    }
+
+
+Inst nInst():
+    {Exp expLeft; Exp expRight; Inst block;
+     Token id; ArgList args; Exp exp; Inst inst;
+     CaseList cases; Token t;}
+    {
+        expLeft = nExp0() t = "=" expRight = nExp0()
+            {return ops.assig(expLeft, expRight, linkToSource(t));}
+        |
+        block = nBlock() nOptSemicolon()
+            {return block;}
+        |
+        t = <CALL> id = <ident> args = nArgs() ";"
+            {return ops.call(id.image, args, linkToSource(t));}
+        |
+        t = <WHILE> exp = nExp0() block = nBlock() nOptSemicolon()
+            {return ops.while_(exp, block, linkToSource(t));}
+        |
+        t = <DO> block = nBlock() <WHILE> exp = nExp0() ";"
+            {return ops.doWhile(block, exp, linkToSource(t));}
+        |
+        t = <IF> exp = nExp0() <THEN> block = nBlock() inst = nRInstIf(exp, block, linkToSource(t))
+            {return inst;}
+        |
+        t = <SWITCH> exp = nExp0() "{" cases = nCases() inst = nRInstSwitch(exp, cases, linkToSource(t))
+            {return inst;}
+        |
+        t = <NEW> exp = nExp0()
+            {return ops.new_(exp, linkToSource(t));}
+        |
+        t = <DELETE> exp = nExp0()
+            {return ops.free(exp, linkToSource(t));}
+        |
+        t = <READ> exp = nExp0()
+            {return ops.read(exp, linkToSource(t));}
+        |
+        t = <WRITE> exp = nExp0()
+            {return ops.write(exp, linkToSource(t));}
+    }
+
+ArgList nArgs():
+    {ArgList args;}
+    {
+        <WITH> args = nArgList()
+            {return args;}
+        |
+            {return ops.noArgs();}
+    }
+
+ArgList nArgList():
+    {Exp exp; ArgList args;}
+    {
+        exp = nExp0() args = nRArgList(ops.args(ops.noArgs(), exp))
+            {return args;}
+    }
+
+ArgList nRArgList(ArgList argsh):
+    {Exp exp; ArgList args;}
+    {
+        "," exp = nExp0() args = nRArgList(ops.args(argsh, exp))
+            {return args;}
+        |
+            {return ops.noArgs();}
+    }
+
+Inst nRInstIf(Exp exph, Inst blockh, String linkh):
+    {Inst block;}
+    {
+        <ELSE> block = nBlock() nOptSemicolon()
+            {return ops.ifThenElse(exph, blockh, block, linkh);}
+        |
+            {return ops.ifThen(exph, blockh, linkh);}
+    }
+
+Inst nRInstSwitch(Exp exph, CaseList casesh, String linkh):
+    {Inst inst;}
+    {
+        <DEFAULTINST> ":" inst = nInst() "}" nOptSemicolon()
+            {return ops.switchDefault(exph, casesh, inst, linkh);}
+        |
+        "}" nOptSemicolon()
+            {return ops.switch_(exph, casesh, linkh);}
+    }
+
+CaseList nCases():
+    {CaseList cases;}
+    {
+        cases = nCaseList()
+            {return cases;}
+        |
+            {return ops.noCases();}
+    }
+
+CaseList nCaseList():
+    {Case c; CaseList cases;}
+    {
+        c = nCase() cases = nRCaseList(ops.cases(ops.noCases(), c))
+            {return cases;}
+    }
+
+CaseList nRCaseList(CaseList casesh):
+    {Case c; CaseList cases;}
+    {
+        c = nCase() cases = nRCaseList(ops.cases(casesh, c))
+            {return cases;}
+        |
+            {return casesh;}
+    }
+
+
+Case nCase():
+    {Case c; Token t;}
+    {
+        t = <CASE> c = nRCase(linkToSource(t))
+           {return c;}
+    }
+
+Case nRCase(String linkh):
+    {Inst inst; Token n;}
+    {
+        <TRUE> ":" inst = nInst()
+            {return ops.case_(ops.constantBool(true), inst, linkh);}
+        |
+        <FALSE> ":" inst = nInst()
+            {return ops.case_(ops.constantBool(false), inst, linkh);}
+        |
+        n = <intLiteral> ":" inst = nInst()
+            {return ops.case_(ops.constantInt(ops.toInt(n.image)), inst, linkh);}
+        |
+        n = <realLiteral> ":" inst = nInst()
+            {return ops.case_(ops.constantReal(ops.toReal(n.image)), inst, linkh);}
+        |
+        n = <charLiteral> ":" inst = nInst()
+            {return ops.case_(ops.constantChar(ops.toChar(n.image)), inst, linkh);}
+    }
+
+Exp nExp0():
+    {Exp e1; Exp e2;}
+    {
+        e1 = nExp1() e2 = nRExp0(e1)
+            {return e2;}
+    }
+
+Exp nRExp0(Exp exph):
+    {Exp exp;}
+    {
+        "==" exp = nExp1()
+            {return ops.equal(exph, exp);}
+        |
+        "!=" exp = nExp1()
+            {return ops.unequal(exph, exp);}
+        |
+        "<" exp = nExp1()
+            {return ops.less(exph, exp);}
+        |
+        ">" exp = nExp1()
+            {return ops.greater(exph, exp);}
+        |
+        "<=" exp = nExp1()
+            {return ops.lessEqual(exph, exp);}
+        |
+        ">=" exp = nExp1()
+            {return ops.greaterEqual(exph, exp);}
+        |
+            {return exph;}
+    }
+
+Exp nExp1():
+    {Exp e1; Exp e2;}
+    {
+        e1 = nExp2() e2 = nRRExp1(e1)
+            {return e2;}
+    }
+
+Exp nRRExp1(Exp exph):
+    {Exp e1; Exp e2;}
+    {
+        "||" e1 = nExp2() e2 = nRExp1(ops.or(exph, e1))
+            {return e2;}
+        |
+        e2 = nRExp1(exph)
+            {return e2;}
+    }
+
+Exp nRExp1(Exp exph):
+    {Exp e1; Exp e2;}
+    {
+        "+" e1 = nExp2() e2 = nRExp1(ops.sum(exph, e1))
+            {return e2;}
+        |
+        "-" e1 = nExp2() e2 = nRExp1(ops.diff(exph, e1))
+            {return e2;}
+        |
+            {return exph;}
+    }
+
+Exp nExp2():
+    {Exp e1; Exp e2;}
+    {
+        e1 = nExp3() e2 = nRRExp2(e1)
+            {return e2;}
+    }
+
+Exp nRRExp2(Exp exph):
+    {Exp e1; Exp e2;}
+    {
+        "&&" e1 = nExp3() e2 = nRExp2(ops.and(exph, e1))
+            {return e2;}
+        |
+        e2 = nRExp2(exph)
+            {return e2;}
+    }
+
+Exp nRExp2(Exp exph):
+    {Exp e1; Exp e2;}
+    {
+        "*" e1 = nExp3() e2 = nRExp2(ops.prod(exph, e1))
+            {return e2;}
+        |
+        "/" e1 = nExp3() e2 = nRExp2(ops.quot(exph, e1))
+            {return e2;}
+        |
+        "%" e1 = nExp3() e2 = nRExp2(ops.rest(exph, e1))
+            {return e2;}
+        |
+            {return exph;}
+    }
+
+Exp nExp3():
+    {Exp exp;}
+    {
+        "-" exp = nExp3()
+            {return ops.signChange(exp);}
+        |
+        "!" exp = nExp3()
+            {return ops.not(exp);}
+        |
+        "<" exp = nRExp3()
+            {return exp;}
+        |
+        exp = nExp4()
+            {return exp;}
+    }
+
+Exp nRExp3():
+    {Exp exp;}
+    {
+        <INT> ">" exp = nExp4()
+            {return ops.conversionInt(exp);}
+        |
+        <BOOL> ">" exp = nExp4()
+            {return ops.conversionBool(exp);}
+        |
+        <FLOAT> ">" exp = nExp4()
+            {return ops.conversionReal(exp);}
+        |
+        <CHAR> ">" exp = nExp4()
+            {return ops.conversionChar(exp);}
+        |
+        <STRING> ">" exp = nExp4()
+            {return ops.conversionString(exp);}
+    }
+
+
+
+
+Exp nExp4():
+    {Exp e1; Exp e2;}
+    {
+        e1 = nExp5() e2 = nRExp4(e1)
+            {return e2;}
+    }
+
+Exp nRExp4(Exp exph):
+    {Exp exp;}
+    {
+        "_" exp = nExp5()
+            {return ops.chainElement(exph, exp);}
+        |
+            {return exph;}
+    }
+
+Exp nExp5():
+    {Exp e1; Exp e2;}
+    {
+        e1 = nExp6() e2 = nRExp5(e1)
+            {return e2;}
+    }
+
+Exp nRExp5(Exp exph):
+    {Exp exp; Exp e1; Exp e2; Token id; Token link;}
+    {
+        link = "[" e1 = nExp0() "]" e2 = nRExp5(ops.index(exph, e1, linkToSource(link)))
+            {return e2;}
+        |
+        link = "." id = <ident> exp = nRExp5(ops.select(exph, id.image, linkToSource(link)))
+            {return exp;}
+        |
+        link = "->" id = <ident> exp = nRExp5(ops.select(ops.deref(exph), id.image, linkToSource(link)))
+            {return exp;}
+        |
+            {return exph;}
+
+    }
+
+
+Exp nExp6():
+    {Exp exp;}
+    {
+        "*" exp = nExp6()
+            {return ops.deref(exp);}
+        |
+        exp = nExp7()
+            {return exp;}
+    }
+
+Exp nExp7():
+    {Exp exp; Exp lit; Token id;}
+    {
+        id = <ident>
+            {return ops.variable(id.image);}
+        |
+        lit = nLiteral()
+            {return lit;}
+        |
+        "(" exp = nExp0() ")"
+            {return exp;}
+    }
+
+Exp nLiteral():
+    {Token lit;}
+    {
+        lit = <intLiteral>
+            {return ops.constantInt(ops.toInt(lit.image));}
+        |
+        lit = <realLiteral>
+            {return ops.constantReal(ops.toReal(lit.image));}
+        |
+        lit = <charLiteral>
+            {return ops.constantChar(ops.toChar(lit.image));}
+        |
+        lit = <stringLiteral>
+            {return ops.constantString(lit.image);}
+        |
+        lit = <TRUE>
+            {return ops.constantBool(true);}
+        |
+        lit = <FALSE>
+            {return ops.constantBool(false);}
+        |
+        lit = <NULL>
+            {return null;}
+    }

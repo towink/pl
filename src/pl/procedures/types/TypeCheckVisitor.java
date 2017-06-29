@@ -6,8 +6,8 @@ import pl.abstractsyntax.Exp;
 import pl.abstractsyntax.Exp.*;
 import pl.errors.Errors;
 import pl.abstractsyntax.Program;
-import pl.abstractsyntax.Instruction;
-import pl.abstractsyntax.Instruction.*;
+import pl.abstractsyntax.Inst;
+import pl.abstractsyntax.Inst.*;
 import pl.type.Type;
 import pl.abstractsyntax.Mem.*;
 import pl.procedures.Visitor;
@@ -83,7 +83,7 @@ public class TypeCheckVisitor extends Visitor {
                     (dec.toDecProc().getBody().getType() == Type.OK);
             }
         }
-        for(Instruction inst : block.getInsts()) {
+        for(Inst inst : block.getInsts()) {
             inst.accept(this);
             ok = ok && inst.getType() == Type.OK;
         }
@@ -109,7 +109,7 @@ public class TypeCheckVisitor extends Visitor {
         else {
             boolean error = false;
             for(int i = 0; i < args.length; i++) {
-                if(params[i].isByReference() && !args[i].isMem()) {
+                if(params[i].isParamByRef() && !args[i].isMem()) {
                     Errors.printErrorFancy(call, Errors.ERROR_BY_REFERENCE);
                     error = true;
                 }

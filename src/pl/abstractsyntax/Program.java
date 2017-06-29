@@ -2,7 +2,7 @@ package pl.abstractsyntax;
 
 import pl.procedures.Visitor;
 import pl.abstractsyntax.Exp.*;
-import pl.abstractsyntax.Instruction.*;
+import pl.abstractsyntax.Inst.*;
 import pl.abstractsyntax.Exp.ConstantBool;
 import pl.type.Type;
 import pl.type.Type.*;
@@ -25,7 +25,7 @@ import pl.abstractsyntax.Mem.*;
 public class Program {
     
     protected ArrayList<Declaration> declarations;
-    protected Instruction instruction;
+    protected Inst instruction;
     private Type type;
     
     /**
@@ -43,7 +43,7 @@ public class Program {
      * @param declarations The list of declarations of this program.
      * @param instruction The base instruction of this program (typically a block)
      */
-    public Program(ArrayList<Declaration> declarations, Instruction instruction) {
+    public Program(ArrayList<Declaration> declarations, Inst instruction) {
         this.declarations = declarations;
         this.instruction = instruction;
         this.type = null;
@@ -65,7 +65,7 @@ public class Program {
      * 
      * @return The program's instruction.
      */
-    public Instruction getInstruction() {
+    public Inst getInstruction() {
         return instruction;
     }
 

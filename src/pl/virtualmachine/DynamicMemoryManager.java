@@ -52,6 +52,7 @@ public class DynamicMemoryManager {
             showHoles();
             System.out.println("----");
         }
+        System.out.println("memory manager: returning cells " + dir + " to " + (dir + size) + " (excluding)");
         return dir;
     }
 

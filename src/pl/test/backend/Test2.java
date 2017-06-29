@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import pl.abstractsyntax.Declaration;
-import pl.abstractsyntax.Instruction;
+import pl.abstractsyntax.Inst;
 import pl.type.Type;
 import pl.type.Type.*;
 
@@ -44,9 +44,9 @@ public class Test2 extends ProgramWithConstructors {
         
         // instructions
         
-        ArrayList<Instruction> instructions = new ArrayList<>();
+        ArrayList<Inst> instructions = new ArrayList<>();
         
-        Instruction i0 = assig(
+        Inst i0 = assig(
                 select(
                         variable("x"),
                         "valMyInt"
@@ -55,7 +55,15 @@ public class Test2 extends ProgramWithConstructors {
         );
         instructions.add(i0);
         
-        Instruction i1 = assig(
+        Inst i01 = write(
+               select(
+                        variable("x"),
+                        "valMyInt"
+                )
+        );
+        instructions.add(i01);
+        
+        Inst i1 = assig(
                 select(
                         variable("myList"),
                         "val"
@@ -64,7 +72,7 @@ public class Test2 extends ProgramWithConstructors {
         "i1");
         instructions.add(i1); // maybe put this line in construction function assig(...)
         
-        Instruction i2 = new_(
+        Inst i2 = new_(
                 select(
                         variable("myList"),
                         "rest"
@@ -72,7 +80,7 @@ public class Test2 extends ProgramWithConstructors {
         "i2");
         instructions.add(i2);
         
-        Instruction i3 = assig(
+        Inst i3 = assig(
                 select(
                         select(
                                 dereference(
@@ -89,10 +97,10 @@ public class Test2 extends ProgramWithConstructors {
         "i3");
         instructions.add(i3);
         
-        Instruction i4 = assig(
+        Inst i4 = assig(
                 index(
                         variable("myListArray"),
-                        constantInt(0)
+                        constantInt(2)
                 ),
                 variable("myList"),
         "i4");

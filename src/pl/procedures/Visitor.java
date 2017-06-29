@@ -3,8 +3,8 @@ package pl.procedures;
 import pl.abstractsyntax.Program;
 import pl.abstractsyntax.Exp;
 import pl.abstractsyntax.Exp.*;
-import pl.abstractsyntax.Instruction;
-import pl.abstractsyntax.Instruction.*;
+import pl.abstractsyntax.Inst;
+import pl.abstractsyntax.Inst.*;
 import pl.abstractsyntax.Declaration;
 import pl.abstractsyntax.Declaration.*;
 import pl.abstractsyntax.Mem;
@@ -89,7 +89,7 @@ public abstract class Visitor {
         for(Declaration dec : block.getDecs()) {
             dec.accept(this);
         }
-        for(Instruction i : block.getInsts()) {
+        for(Inst i : block.getInsts()) {
             i.accept(this);
         }
     }

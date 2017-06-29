@@ -7,8 +7,8 @@ import java.util.Map;
 import pl.abstractsyntax.Declaration;
 import pl.abstractsyntax.Declaration.*;
 import pl.abstractsyntax.Exp;
-import pl.abstractsyntax.Instruction;
-import pl.abstractsyntax.Instruction.*;
+import pl.abstractsyntax.Inst;
+import pl.abstractsyntax.Inst.*;
 import pl.abstractsyntax.Program;
 import pl.procedures.Visitor;
 import pl.type.Type;
@@ -205,7 +205,7 @@ public class LinkingVisitor extends Visitor {
             dec.accept(crefs);
         }
         log("instructions");
-        for(Instruction inst : block.getInsts()) {
+        for(Inst inst : block.getInsts()) {
             inst.accept(this);
         }
     }

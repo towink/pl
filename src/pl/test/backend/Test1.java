@@ -1,8 +1,8 @@
 package pl.test.backend;
 
 import pl.abstractsyntax.Exp;
-import pl.abstractsyntax.Instruction;
-import pl.abstractsyntax.Instruction.*;
+import pl.abstractsyntax.Inst;
+import pl.abstractsyntax.Inst.*;
 import pl.abstractsyntax.Declaration;
 import java.util.ArrayList;
 import pl.type.Type;
@@ -19,7 +19,7 @@ public class Test1 extends ProgramWithConstructors {
         decs.add(decVar(Type.STRING, "myString", "line y"));
         decs.add(decVar(Type.STRING, "yourString", "line z"));
 
-        ArrayList<Instruction> insts = new ArrayList<>();
+        ArrayList<Inst> insts = new ArrayList<>();
         insts.add(assig(
            variable("x"), sum(constantInt(5), constantInt(6), "line 4"), "line 4"));
         insts.add(assig(
@@ -86,7 +86,7 @@ public class Test1 extends ProgramWithConstructors {
                     write(constantString("cool, 99"))
                 )
         );
-        Instruction switchDefaultInst = write(constantString("executing default instruction ..."));
+        Inst switchDefaultInst = write(constantString("executing default instruction ..."));
         InstructionSwitch switchInst = switch_(switchExp, cases, switchDefaultInst, "line xyz");
         insts.add(switchInst);
         

@@ -74,6 +74,7 @@ public abstract class Declaration implements LinkToSource {
 
        private DefinedType type;
        private int dir;
+       private int level;
 
        /**
         * Reduced constructor without link to source.
@@ -103,15 +104,21 @@ public abstract class Declaration implements LinkToSource {
            super(ident, linkToSource);
            this.type = type;
        }
+       
+       public boolean isParamByRef() {
+           return false;
+       }
 
        @Override
        public void accept(Visitor v) { v.visit(this); }
        
        public DefinedType getType() { return type; }       
        public int getDir() { return dir; }
-
-       public void setDir(int dir) { this.dir = dir; }
+       public int getLevel() { return level; }
+       
        public void setType(DefinedType type) { this.type = type; }
+       public void setDir(int dir) { this.dir = dir; }
+       public void setLevel(int level) { this.level = level; }
        
     }
     
@@ -121,14 +128,14 @@ public abstract class Declaration implements LinkToSource {
     public static class DeclarationProc extends Declaration {
         
         private DeclarationParam[] params;
-        private Instruction body;
+        private Inst body;
         private int level;
         private int size;
         
         public DeclarationProc(
                 String ident,
                 DeclarationParam[] params,
-                Instruction body
+                Inst body
         ) {
             super(ident);
             this.params = params;
@@ -139,7 +146,7 @@ public abstract class Declaration implements LinkToSource {
                 String ident,
                 String link,
                 DeclarationParam[] params,
-                Instruction body
+                Inst body
         ) {
             super(ident, link);
             this.params = params;
@@ -156,7 +163,7 @@ public abstract class Declaration implements LinkToSource {
         public void accept(Visitor v) { v.visit(this); }
         
         public DeclarationParam[] getParams() { return params; }
-        public Instruction getBody() { return body; }
+        public Inst getBody() { return body; }
         public int getLevel() { return level; }
         public int getSize() { return size; }
         
@@ -194,7 +201,8 @@ public abstract class Declaration implements LinkToSource {
             this.byReference = byReference;
         }
         
-        public boolean isByReference() { return byReference; }
+        @Override
+        public boolean isParamByRef() { return byReference; }
         
     }
     

@@ -102,7 +102,13 @@ public class VirtualMachine {
         }
         System.out.println("Memory:");
         for(int i = 0; i < memory.length; i++) {
-            System.out.println(" " + i +": " + memory[i]);
+            if(i == staticMemorySize) {
+                System.out.println("----------");
+            }
+            else if(i == staticMemorySize + activationStackSize) {
+                System.out.println("----------");
+            }
+            System.out.println(" " + i + ": " + memory[i]);
         }
         System.out.println("PC:");
         System.out.println(" " + pc);
@@ -125,7 +131,7 @@ public class VirtualMachine {
         public double getReal() { throw new TypeException(pc); }
         public char getChar() { throw new TypeException(pc); }
         public String getString() { throw new TypeException(pc); }
-
+        
         public Value signChange() {
             throw new TypeException(pc);
         }
@@ -169,6 +175,10 @@ public class VirtualMachine {
         public int getInt() {
             return value;
         }
+        @Override
+        public double getReal() {
+            return (double)value;
+        }
 
         @Override
         public Value signChange() {
@@ -196,9 +206,10 @@ public class VirtualMachine {
             return new ValueString(Integer.toString(value));
         }
 
+        // always compare as doubles
         @Override
         public int compareTo(Value o) {
-            return Integer.valueOf(value).compareTo(o.getInt());
+            return Double.valueOf(value).compareTo(o.getReal());
         }
 
         @Override
@@ -396,7 +407,7 @@ public class VirtualMachine {
     /**
      * Represents a code instruction the virtual machine can execute.
      */
-    private interface MachineInstruction {
+    public interface MachineInstruction {
 
         /**
          * Is called when the machine tries to execute this instruction.
@@ -823,8 +834,8 @@ public class VirtualMachine {
     }
     
     private class InstructionRead implements MachineInstruction {
-        private AtomicDefinedType targetType;
-        public InstructionRead(AtomicDefinedType targetType) {
+        private Type targetType;
+        public InstructionRead(Type targetType) {
             this.targetType = targetType;
         }
         @Override
@@ -873,6 +884,10 @@ public class VirtualMachine {
                 else {
                     stack.push(UNKNOWN);
                 }
+            }
+            // this should not happen due to static type check
+            else {
+                throw new TypeException(pc);
             }
             pc++;
         }
@@ -960,7 +975,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "pushString(" + value + ")";
+            return "pushString(\"" + value + "\")";
         }
     }
 
@@ -996,7 +1011,7 @@ public class VirtualMachine {
             pc++;
         }
         @Override
-        public String toString() { return "pop2AndStore"; }
+        public String toString() { return "pop2Store"; }
     }
 
     // "apilaDir"
@@ -1103,7 +1118,7 @@ public class VirtualMachine {
                 throw new InvalidAddressException(pc, addrTo + size);
             }
             for(int i = 0; i < size; i++) {
-                memory[addrFrom + i] = memory[addrTo + i];
+                memory[addrTo + i] = memory[addrFrom + i];
             }
             pc++;
         }
@@ -1187,36 +1202,6 @@ public class VirtualMachine {
         }
     }
     
-    /* miscellaneous instructions */
-    
-    private InstructionStop INSTRUCTION_STOP = new InstructionStop();
-    private class InstructionStop implements MachineInstruction {
-        @Override
-        public void execute() {
-            pc = code.size();
-        }
-        @Override
-        public String toString() {
-            return "stop";
-        }
-    }
-    
-    private InstructionNop INSTRUCTION_NOP = new InstructionNop();
-    private class InstructionNop implements MachineInstruction {
-        @Override
-        public void execute() {
-            pc++;
-        }
-        @Override
-        public String toString() {
-            return "nop";
-        }
-    }
-    
-    
-    
-    
-
     /* jump instructions */
 
     // "irA"
@@ -1267,60 +1252,66 @@ public class VirtualMachine {
             return "popJump";
         }
     }
+    
+    /* miscellaneous instructions */
+    
+    private InstructionStop INSTRUCTION_STOP = new InstructionStop();
+    private class InstructionStop implements MachineInstruction {
+        @Override
+        public void execute() {
+            pc = code.size();
+        }
+        @Override
+        public String toString() {
+            return "stop";
+        }
+    }
+    
+    private InstructionNop INSTRUCTION_NOP = new InstructionNop();
+    private class InstructionNop implements MachineInstruction {
+        @Override
+        public void execute() {
+            pc++;
+        }
+        @Override
+        public String toString() {
+            return "nop";
+        }
+    }
 
     /* instruction constructors */
 
     // TODO instead of beeing constructors, these methods should add the
     // corresponding instructions directly to the code ???
-
-    // "apila"
-    public MachineInstruction pushInt(int val) { return new InstructionPushInt(val); }
-    public MachineInstruction pushBool(boolean val) { return new InstructionPushBool(val); }
-    public MachineInstruction pushReal(double val) { return new InstructionPushReal(val); }
-    public MachineInstruction pushChar(char val) { return new InstructionPushChar(val); }
-    public MachineInstruction pushString(String val) { return new InstructionPushString(val); }
-
-    // "desapilaDir"
-    public MachineInstruction popStore(int addr) { return new InstructionPopStore(addr); }
-    // "desapilaInd"
-    public MachineInstruction pop2Store() { return INSTRUCTION_POP2_STORE; }
-
-    // "apilaDir"
-    public MachineInstruction loadPush(int addr) { return new InstructionLoadPush(addr); }
-    // "apilaInd"
-    public MachineInstruction popLoadPush() { return INSTRUCTION_POP_LOAD_PUSH; }
-
-    public MachineInstruction jump(int pos) { return new InstructionJump(pos); }
-    public MachineInstruction jumpIfFalse(int pos) { return new InstructionJumpIfFalse(pos); }
-
-    public MachineInstruction alloc(int size) { return new InstructionAlloc(size); }
-    public MachineInstruction dealloc(int size) { return new InstructionDealloc(size); }
-
-    public MachineInstruction copy(int size) { return new InstructionCopy(size); }
-
-    public MachineInstruction write() { return INSTRUCTION_WRITE; }
-    public MachineInstruction read() { throw new UnsupportedOperationException(); }
-
-    public MachineInstruction addInt() { return INSTRUCTION_ADD_INT; }
-    public MachineInstruction addReal() { return INSTRUCTION_ADD_REAL; }
-
-    public MachineInstruction multInt() { return INSTRUCTION_MULT_INT; }
-    public MachineInstruction multReal() { return INSTRUCTION_MULT_REAL; }
-
-    public MachineInstruction subtInt() { return INSTRUCTION_SUBT_INT; }
-    public MachineInstruction subtReal() { return INSTRUCTION_SUBT_REAL; }
-
-    public MachineInstruction divInt() { return INSTRUCTION_DIV_INT; }
-    public MachineInstruction divReal() { return INSTRUCTION_DIV_REAL; }
+    
+    /* conversion instructions */
+    
+    public MachineInstruction convertInt() { return INSTRUCTION_CONVERT_INT; }
+    public MachineInstruction convertBool() { return INSTRUCTION_CONVERT_BOOL; }
+    public MachineInstruction convertReal() { return INSTRUCTION_CONVERT_REAL; }
+    public MachineInstruction convertChar() { return INSTRUCTION_CONVERT_CHAR; }
+    public MachineInstruction convertString() { return INSTRUCTION_CONVERT_STRING; }
+    
+    /* arithmetic instructions */
 
     public MachineInstruction signChange() { return INSTRUCTION_SIGN_CHANGE; }
-
+    public MachineInstruction addInt() { return INSTRUCTION_ADD_INT; }
+    public MachineInstruction addReal() { return INSTRUCTION_ADD_REAL; }
+    public MachineInstruction multInt() { return INSTRUCTION_MULT_INT; }
+    public MachineInstruction multReal() { return INSTRUCTION_MULT_REAL; }
+    public MachineInstruction subtInt() { return INSTRUCTION_SUBT_INT; }
+    public MachineInstruction subtReal() { return INSTRUCTION_SUBT_REAL; }
+    public MachineInstruction divInt() { return INSTRUCTION_DIV_INT; }
+    public MachineInstruction divReal() { return INSTRUCTION_DIV_REAL; }
     public MachineInstruction mod() { return INSTRUCTION_REST; }
-
-    public MachineInstruction and() { return INSTRUCTION_AND; }
-    public MachineInstruction or() { return INSTRUCTION_OR; }
-    public MachineInstruction not() { return INSTRUCTION_NOT; }
-
+    
+    /* string instructions */
+    
+    public MachineInstruction concatString() { return INSTRUCTION_CONCAT_STRING; }
+    public MachineInstruction chainElement() { return INSTRUCTION_CHAIN_ELEMENT; }
+    
+    /* relational instructions */
+    
     public MachineInstruction equal() { return INSTRUCTION_EQUAL; }
     public MachineInstruction equalPop1() { return INSTRUCTION_EQUAL_POP1; }
     public MachineInstruction unequal() { return INSTRUCTION_UNEQUAL; }
@@ -1328,14 +1319,68 @@ public class VirtualMachine {
     public MachineInstruction lessEqual() { return INSTRUCTION_LESS_EQUAL; }
     public MachineInstruction greater() { return INSTRUCTION_GREATER; }
     public MachineInstruction greaterEqual() { return INSTRUCTION_GREATER_EQUAL; }
+    
+    /* logical instructions */
+    
+    public MachineInstruction and() { return INSTRUCTION_AND; }
+    public MachineInstruction or() { return INSTRUCTION_OR; }
+    public MachineInstruction not() { return INSTRUCTION_NOT; }
+    
+    /* IO instructions */
+    
+    public MachineInstruction write() { return INSTRUCTION_WRITE; }
+    public MachineInstruction read(Type targetType) {
+        return new InstructionRead(targetType);
+    }
+    
+    /* load and store instructions */
 
-    public MachineInstruction concatString() { return INSTRUCTION_CONCAT_STRING; }
-    public MachineInstruction chainElement() { return INSTRUCTION_CHAIN_ELEMENT; }
+    // "apila"
+    public MachineInstruction pushInt(int val) { return new InstructionPushInt(val); }
+    public MachineInstruction pushBool(boolean val) { return new InstructionPushBool(val); }
+    public MachineInstruction pushReal(double val) { return new InstructionPushReal(val); }
+    public MachineInstruction pushChar(char val) { return new InstructionPushChar(val); }
+    public MachineInstruction pushString(String val) { return new InstructionPushString(val); }
+    // "desapilaDir"
+    public MachineInstruction popStore(int addr) { return new InstructionPopStore(addr); }
+    // "desapilaInd"
+    public MachineInstruction pop2Store() { return INSTRUCTION_POP2_STORE; }
+    // "apilaDir"
+    public MachineInstruction loadPush(int addr) { return new InstructionLoadPush(addr); }
+    // "apilaInd"
+    public MachineInstruction popLoadPush() { return INSTRUCTION_POP_LOAD_PUSH; }
+    public MachineInstruction duplicate() { return INSTRUCTION_DUPLICATE; }
+    
+    /* memory management instructions */
+    
+    public MachineInstruction alloc(int size) { return new InstructionAlloc(size); }
+    public MachineInstruction dealloc(int size) { return new InstructionDealloc(size); }
+    public MachineInstruction copy(int size) { return new InstructionCopy(size); }
+    
+    /* activation stack instructions */
+    
+    public MachineInstruction activate(int level, int size, int returnAddr) {
+        return new InstructionActivate(level, size, returnAddr);
+    }
+    public MachineInstruction deactivate(int level, int size) {
+        return new InstructionDeactivate(level, size);
+    }
+    public MachineInstruction setDisplay(int level) {
+        return new InstructionSetDisplay(level);
+    }
+    public MachineInstruction pushDisplay(int level) {
+        return new InstructionPushDisplay(level);
+    }
+    
+    /* jump instructions */
 
-    public MachineInstruction convertInt() { return INSTRUCTION_CONVERT_INT; }
-    public MachineInstruction convertBool() { return INSTRUCTION_CONVERT_BOOL; }
-    public MachineInstruction convertReal() { return INSTRUCTION_CONVERT_REAL; }
-    public MachineInstruction convertChar() { return INSTRUCTION_CONVERT_CHAR; }
-    public MachineInstruction convertString() { return INSTRUCTION_CONVERT_STRING; }
-
+    public MachineInstruction jump(int pos) { return new InstructionJump(pos); }
+    public MachineInstruction jumpIfFalse(int pos) { return new InstructionJumpIfFalse(pos); }
+    public MachineInstruction popJump() { return INSTRUCTION_POP_JUMP; }
+    
+    /* miscellaneous instructions */
+    
+    public MachineInstruction stop() { return INSTRUCTION_STOP; } 
+    public MachineInstruction nop() { return INSTRUCTION_NOP; } 
+    
 }

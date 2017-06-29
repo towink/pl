@@ -6,11 +6,13 @@ import pl.abstractsyntax.Declaration;
 import pl.abstractsyntax.Declaration.*;
 import pl.abstractsyntax.Exp;
 import pl.abstractsyntax.Exp.*;
-import pl.abstractsyntax.Instruction;
-import pl.abstractsyntax.Instruction.*;
+import pl.abstractsyntax.Inst;
+import pl.abstractsyntax.Inst.*;
+import pl.abstractsyntax.Inst.InstructionSwitch.Case;
 import pl.abstractsyntax.Mem;
 import pl.abstractsyntax.Mem.*;
 import pl.abstractsyntax.Program;
+import pl.type.Type;
 import pl.type.Type.*;
 import pl.type.Type.TypeRecord.RecordField;
 
@@ -20,199 +22,336 @@ import pl.type.Type.TypeRecord.RecordField;
  */
 public class ProgramWithConstructors extends Program {
 
-    /* types */
+    /* helper types and constructors for the AST constructor */
     
+    public int toInt(String s) {
+        return Integer.parseInt(s);
+    }
+    
+    public double toReal(String s) {
+        return Double.parseDouble(s);
+    }
+    
+    public char toChar(String s) {
+        if(s.length() != 1) {
+            throw new IllegalArgumentException();
+        }
+        return s.charAt(0);
+    }
+
+    public static class DecList extends ArrayList<Declaration> {}
+    DecList noDecs() { return new DecList(); }
+    DecList decs(DecList list, Declaration dec) {
+        list.add(dec);
+        return list;
+    }
+
+    public static class InstList extends ArrayList<Inst> {}
+    InstList noInsts() { return new InstList(); }
+    InstList insts(InstList list, Inst inst) {
+        list.add(inst);
+        return list;
+    }
+
+    public static class ParamList extends ArrayList<Declaration> {}
+    ParamList noParams() { return new ParamList(); }
+    ParamList params(ParamList list, DeclarationParam dec) {
+        list.add(dec);
+        return list;
+    }
+
+    public static class ArgList extends ArrayList<Exp> {}
+    ArgList noArgs() { return new ArgList(); }
+    ArgList args(ArgList list, Exp exp) {
+        list.add(exp);
+        return list;
+    }
+
+    public static class FieldList extends ArrayList<RecordField> {}
+    FieldList oneField(RecordField f) {
+        FieldList res = new FieldList();
+        res.add(f);
+        return res;
+    }
+    FieldList fields(FieldList list, RecordField f) {
+        list.add(f);
+        return list;
+    }
+
+    public static class CaseList extends ArrayList<Case> {}
+    CaseList noCases() { return new CaseList(); }
+    CaseList args(CaseList list, Case c) {
+        list.add(c);
+        return list;
+    }
+
+    /* types */
+
+    /* types - definable - atomic */
+
+    DefinedType typeInt() { return Type.INT; }
+    DefinedType typeBool() { return Type.BOOL; }
+    DefinedType typeReal() { return Type.REAL; }
+    DefinedType typeChar() { return Type.CHAR; }
+    DefinedType typeString() { return Type.STRING; }
+
     /* types - definable - composed */
 
-    final TypeRef typeRef(String alias) {
+    DefinedType typeRef(String alias) {
         return new TypeRef(alias);
     }
-    final TypeArray typeArray(DefinedType baseType, int dim) {
+    DefinedType typeArray(DefinedType baseType, int dim) {
         return new TypeArray(baseType, dim);
     }
-    final TypeRecord typeRecord() {
-        return new TypeRecord(new ArrayList<>());
-    }
-    final RecordField field(TypeRecord record, String id, DefinedType type) {
-        return record.new RecordField(id, type);
-    }
-    final TypePointer typePoiner(DefinedType baseType) {
+    DefinedType typePoiner(DefinedType baseType) {
         return new TypePointer(baseType);
     }
-
+    DefinedType typeRecord(FieldList fields) {
+        return new TypeRecord(fields);
+    }
+    RecordField field(DefinedType type, String id) {
+        throw new UnsupportedOperationException("not implemented");
+    }
 
     /* program */
 
-    final Program prog(ArrayList<Declaration> decs, Instruction inst) {
+    Program prog(DecList decs, Inst inst) {
         return new Program(decs, inst);
     }
 
     /* declarations */
 
-    final DeclarationVariable decVar(DefinedType type, String var) {
+    Declaration decVar(DefinedType type, String var) {
         return new DeclarationVariable(var, type);
     }
-    final DeclarationVariable decVar(DefinedType type, String var, String linkToSource) {
+    Declaration decVar(DefinedType type, String var, String linkToSource) {
         return new DeclarationVariable(var, type, linkToSource);
     }
 
-    final DeclarationType decType(String alias, DefinedType type) {
+    Declaration decType(String alias, DefinedType type) {
         return new DeclarationType(alias, type, null);
     }
-    final DeclarationType decType(String alias, DefinedType type, String link) {
+    Declaration decType(String alias, DefinedType type, String link) {
         return new DeclarationType(alias, type, link);
+    }
+
+    Declaration decProc(String alias, ParamList params, Inst inst) {
+        return new DeclarationProc(alias, (DeclarationParam[])params.toArray(), inst);
+    }
+    Declaration decProc(String alias, ParamList params, Inst inst, String link) {
+        return new DeclarationProc(alias, link, (DeclarationParam[])params.toArray(), inst);
+    }
+
+    DeclarationParam decParam(DefinedType type, boolean mode, String ident) {
+        return new DeclarationParam(ident, type, mode);
+    }
+    DeclarationParam decParam(DefinedType type, boolean mode, String ident, String link) {
+        return new DeclarationParam(ident, type, mode, link);
     }
 
     /* instructions */
 
     /* instructions - general */
 
-    final InstructionBlock block(ArrayList<Instruction> insts) {
-        return new InstructionBlock(insts);
+    Inst assig(Exp mem, Exp exp) {
+        // TODO check if mem is really a mem
+        return new InstructionAssignment((Mem)mem, exp);
+    }
+    Inst assig(Exp mem, Exp exp, String linkToSource) {
+        // TODO check if mem is really a mem
+        return new InstructionAssignment((Mem)mem, exp, linkToSource);
     }
 
-    final InstructionAssignment assig(Mem mem, Exp exp) {
-        return new InstructionAssignment(mem, exp);
+    Inst block(DecList decs, InstList insts) {
+        return new InstructionBlock((Declaration[])decs.toArray(), insts);
     }
-    final InstructionAssignment assig(Mem mem, Exp exp, String linkToSource) {
-        return new InstructionAssignment(mem, exp, linkToSource);
+
+    Inst call(String ident, ArgList args) {
+        return new InstructionCall(ident, (Exp[])args.toArray());
+    }
+    Inst call(String ident, ArgList args, String link) {
+        return new InstructionCall(ident, (Exp[])args.toArray(), link);
     }
 
     /* instructions - IO */
 
-    final InstructionWrite write(Exp exp) {
+    Inst write(Exp exp) {
         return new InstructionWrite(exp);
     }
-    final InstructionWrite write(Exp exp, String linkToSource) {
+    Inst write(Exp exp, String linkToSource) {
         return new InstructionWrite(exp, linkToSource);
+    }
+
+    Inst read(Exp exp) {
+        // TODO check if exp is really a mem
+        return new InstructionRead((Mem)exp);
+    }
+    Inst read(Exp exp, String linkToSource) {
+        // TODO check if exp is really a mem
+        return new InstructionRead((Mem)exp, linkToSource);
     }
 
     /* instructions - memory */
 
-    final Instruction new_(Mem mem) {
-        return new InstructionNew(mem);
+    Inst new_(Exp mem) {
+        // TODO check if exp is really a pointer
+        return new InstructionNew((Mem)mem);
     }
-    final Instruction new_(Mem mem, String linkToSource) {
-        return new InstructionNew(mem, linkToSource);
+    Inst new_(Exp mem, String linkToSource) {
+        return new InstructionNew((Mem)mem, linkToSource);
     }
 
-    final Instruction free(Mem mem) {
-        return new InstructionNew(mem);
+    Inst free(Exp mem) {
+        return new InstructionFree((Mem)mem);
     }
-    final Instruction free(Mem mem, String linkToSource) {
-        return new InstructionNew(mem, linkToSource);
+    Inst free(Exp mem, String linkToSource) {
+        return new InstructionFree((Mem)mem, linkToSource);
     }
 
     /* instructions - control structures */
 
-    final InstructionWhile while_(Exp condition, Instruction body) {
+    Inst while_(Exp condition, Inst body) {
         return new InstructionWhile(condition, body);
     }
-    final InstructionWhile while_(Exp condition, Instruction body, String linkToSource) {
+    Inst while_(Exp condition, Inst body, String linkToSource) {
         return new InstructionWhile(condition, body, linkToSource);
     }
 
-    final InstructionIfThen ifThen(Exp condition, Instruction body) {
+    Inst doWhile(Inst body, Exp condition) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+    Inst doWhile(Inst body, Exp condition, String linkToSource) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    Inst ifThen(Exp condition, Inst body) {
         return new InstructionIfThen(condition, body);
     }
-    final InstructionIfThen ifThen(Exp condition, Instruction body, String linkToSource) {
+    Inst ifThen(Exp condition, Inst body, String linkToSource) {
         return new InstructionIfThen(condition, body, linkToSource);
     }
 
-    final InstructionIfThenElse ifThenElse(Exp condition, Instruction body1, Instruction body2) {
+    Inst ifThenElse(Exp condition, Inst body1, Inst body2) {
         return new InstructionIfThenElse(condition, body1, body2);
     }
-    final InstructionIfThenElse ifThenElse(Exp condition, Instruction body1, Instruction body2, String linkToSource) {
+    Inst ifThenElse(Exp condition, Inst body1, Inst body2, String linkToSource) {
         return new InstructionIfThenElse(condition, body1, body2, linkToSource);
     }
 
-    final InstructionSwitch switch_(Exp exp, ArrayList<InstructionSwitch.Case> cases, Instruction defaultInst) {
+    // switch WITHOUT default
+    Inst switch_(Exp exp, CaseList cases) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+    Inst switch_(Exp exp, CaseList cases, String linkToSource) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    Inst switchDefault(Exp exp, CaseList cases, Inst defaultInst) {
         return new InstructionSwitch(exp, cases, defaultInst);
     }
-    final InstructionSwitch switch_(Exp exp, ArrayList<InstructionSwitch.Case> cases, Instruction defaultInst, String linkToSource) {
+    Inst switchDefault(Exp exp, CaseList cases, Inst defaultInst, String linkToSource) {
         return new InstructionSwitch(exp, cases, defaultInst, linkToSource);
+    }
+
+    Case case_(Exp exp, Inst inst) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+    Case case_(Exp exp, Inst inst, String linkToSource) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     /* expressions */
 
     /* constants */
 
-    final Exp constantInt(int val) { return new ConstantInt(val); }
-    final Exp constantBool(boolean val) { return new ConstantBool(val); }
-    final Exp constantReal(double val) { return new ConstantReal(val); }
-    final Exp constantChar(char val) { return new ConstantChar(val); }
-    final Exp constantString(String val) { return new ConstantString(val); }
+    Exp constantInt(int val) { return new ConstantInt(val); }
+    Exp constantBool(boolean val) { return new ConstantBool(val); }
+    Exp constantReal(double val) { return new ConstantReal(val); }
+    Exp constantChar(char val) { return new ConstantChar(val); }
+    Exp constantString(String val) { return new ConstantString(val); }
 
     /* mems */
 
-    final Variable variable(String name) {
+    Exp variable(String name) {
         return new Variable(name);
     }
-    final Variable variable(String name, String linkToSource) {
+    Exp variable(String name, String linkToSource) {
         return new Variable(name, linkToSource);
     }
-    final Index index(Mem mem, Exp exp) {
-        return new Index(mem, exp);
+
+    Exp index(Exp mem, Exp exp) {
+        return new Index((Mem)mem, exp);
     }
-    final Select select(Mem mem, String field) {
-        return new Select(mem, field);
+    Exp index(Exp mem, Exp exp, String linkToSource) {
+        return new Index((Mem)mem, exp, linkToSource);
     }
-    final Dereference dereference(Mem mem) {
-        return new Dereference(mem);
+
+    Exp select(Exp mem, String field) {
+        return new Select((Mem)mem, field);
+    }
+    Exp select(Exp mem, String field, String linkToSource) {
+        return new Select((Mem)mem, field, linkToSource);
+    }
+
+    Exp deref(Exp mem) {
+        return new Dereference((Mem)mem);
+    }
+    Exp deref(Exp mem, String linkToSource) {
+        return new Dereference((Mem)mem, linkToSource);
     }
 
     /* unary operations - arithmetic */
 
-    final Exp signChange(Exp exp) {
+    Exp signChange(Exp exp) {
         return new SignChange(exp);
     }
-    final Exp signChange(Exp exp, String linkToSource) {
+    Exp signChange(Exp exp, String linkToSource) {
         return new SignChange(exp, linkToSource);
     }
 
     /* unary operations - logical */
 
-    final Exp not(Exp exp) {
+    Exp not(Exp exp) {
         return new Not(exp);
     }
-    final Exp not(Exp exp, String linkToSource) {
+    Exp not(Exp exp, String linkToSource) {
         return new Not(exp, linkToSource);
     }
 
     /* unary operations - explicit conversions */
 
-    final Exp conversionInt(Exp exp) {
+    Exp conversionInt(Exp exp) {
         return new ConversionInt(exp);
     }
-    final Exp conversionInt(Exp exp, String linkToSource) {
+    Exp conversionInt(Exp exp, String linkToSource) {
         return new ConversionInt(exp, linkToSource);
     }
 
-    final Exp conversionBool(Exp exp) {
+    Exp conversionBool(Exp exp) {
         return new ConversionBool(exp);
     }
-    final Exp conversionBool(Exp exp, String linkToSource) {
+    Exp conversionBool(Exp exp, String linkToSource) {
         return new ConversionBool(exp, linkToSource);
     }
 
-    final Exp conversionReal(Exp exp) {
+    Exp conversionReal(Exp exp) {
         return new ConversionReal(exp);
     }
-    final Exp conversionReal(Exp exp, String linkToSource) {
+    Exp conversionReal(Exp exp, String linkToSource) {
         return new ConversionReal(exp, linkToSource);
     }
 
-    final Exp conversionChar(Exp exp) {
+    Exp conversionChar(Exp exp) {
         return new ConversionChar(exp);
     }
-    final Exp conversionChar(Exp exp, String linkToSource) {
+    Exp conversionChar(Exp exp, String linkToSource) {
         return new ConversionChar(exp, linkToSource);
     }
 
-    final Exp conversionString(Exp exp) {
+    Exp conversionString(Exp exp) {
         return new ConversionString(exp);
     }
-    final Exp conversionString(Exp exp, String linkToSource) {
+    Exp conversionString(Exp exp, String linkToSource) {
         return new ConversionString(exp, linkToSource);
     }
 
@@ -220,107 +359,107 @@ public class ProgramWithConstructors extends Program {
 
     /* binary expressions - miscellaneous */
 
-    final Exp chainElement(Exp exp1, Exp exp2) {
+    Exp chainElement(Exp exp1, Exp exp2) {
         return new ChainElement(exp1, exp2);
     }
-    final Exp chainElement(Exp exp1, Exp exp2, String linkToSource) {
+    Exp chainElement(Exp exp1, Exp exp2, String linkToSource) {
         return new ChainElement(exp1, exp2, linkToSource);
     }
 
     /* binary operations - arithmetic */
 
-    final Exp sum(Exp exp1, Exp exp2) {
+    Exp sum(Exp exp1, Exp exp2) {
         return new Sum(exp1, exp2);
     }
-    final Exp sum(Exp exp1, Exp exp2, String linkToSource) {
+    Exp sum(Exp exp1, Exp exp2, String linkToSource) {
         return new Sum(exp1, exp2, linkToSource);
     }
 
-    final Exp prod(Exp exp1, Exp exp2) {
+    Exp prod(Exp exp1, Exp exp2) {
         return new Product(exp1, exp2);
     }
-    final Exp prod(Exp exp1, Exp exp2, String linkToSource) {
+    Exp prod(Exp exp1, Exp exp2, String linkToSource) {
         return new Product(exp1, exp2, linkToSource);
     }
 
-    final Exp quot(Exp exp1, Exp exp2) {
+    Exp quot(Exp exp1, Exp exp2) {
         return new Quotient(exp1, exp2);
     }
-    final Exp quot(Exp exp1, Exp exp2, String linkToSource) {
+    Exp quot(Exp exp1, Exp exp2, String linkToSource) {
         return new Quotient(exp1, exp2, linkToSource);
     }
 
-    final Exp diff(Exp exp1, Exp exp2) {
+    Exp diff(Exp exp1, Exp exp2) {
         return new Difference(exp1, exp2);
     }
-    final Exp diff(Exp exp1, Exp exp2, String linkToSource) {
+    Exp diff(Exp exp1, Exp exp2, String linkToSource) {
         return new Difference(exp1, exp2, linkToSource);
     }
 
-    final Exp rest(Exp exp1, Exp exp2) {
+    Exp rest(Exp exp1, Exp exp2) {
         return new Rest(exp1, exp2);
     }
-    final Exp rest(Exp exp1, Exp exp2, String linkToSource) {
+    Exp rest(Exp exp1, Exp exp2, String linkToSource) {
         return new Rest(exp1, exp2, linkToSource);
     }
 
     /* binary expressions - relational */
 
-    final Exp equal(Exp exp1, Exp exp2) {
+    Exp equal(Exp exp1, Exp exp2) {
         return new Equal(exp1, exp2);
     }
-    final Exp equal(Exp exp1, Exp exp2, String linkToSource) {
+    Exp equal(Exp exp1, Exp exp2, String linkToSource) {
         return new Equal(exp1, exp2, linkToSource);
     }
 
-    final Exp unequal(Exp exp1, Exp exp2) {
+    Exp unequal(Exp exp1, Exp exp2) {
         return new Unequal(exp1, exp2);
     }
-    final Exp unequal(Exp exp1, Exp exp2, String linkToSource) {
+    Exp unequal(Exp exp1, Exp exp2, String linkToSource) {
         return new Unequal(exp1, exp2, linkToSource);
     }
 
-    final Exp less(Exp exp1, Exp exp2) {
+    Exp less(Exp exp1, Exp exp2) {
         return new Less(exp1, exp2);
     }
-    final Exp less(Exp exp1, Exp exp2, String linkToSource) {
+    Exp less(Exp exp1, Exp exp2, String linkToSource) {
         return new Less(exp1, exp2, linkToSource);
     }
 
-    final Exp lessEqual(Exp exp1, Exp exp2) {
+    Exp lessEqual(Exp exp1, Exp exp2) {
         return new LessEqual(exp1, exp2);
     }
-    final Exp lessEqual(Exp exp1, Exp exp2, String linkToSource) {
+    Exp lessEqual(Exp exp1, Exp exp2, String linkToSource) {
         return new LessEqual(exp1, exp2, linkToSource);
     }
 
-    final Exp greater(Exp exp1, Exp exp2) {
+    Exp greater(Exp exp1, Exp exp2) {
         return new Greater(exp1, exp2);
     }
-    final Exp greater(Exp exp1, Exp exp2, String linkToSource) {
+    Exp greater(Exp exp1, Exp exp2, String linkToSource) {
         return new Greater(exp1, exp2, linkToSource);
     }
 
-    final Exp greaterEqual(Exp exp1, Exp exp2) {
+    Exp greaterEqual(Exp exp1, Exp exp2) {
         return new GreaterEqual(exp1, exp2);
     }
-    final Exp greaterEqual(Exp exp1, Exp exp2, String linkToSource) {
+    Exp greaterEqual(Exp exp1, Exp exp2, String linkToSource) {
         return new GreaterEqual(exp1, exp2, linkToSource);
     }
 
     /* binary operations - logical */
 
-    final Exp and(Exp exp1, Exp exp2) {
+    Exp and(Exp exp1, Exp exp2) {
         return new And(exp1, exp2);
     }
-    final Exp and(Exp exp1, Exp exp2, String linkToSource) {
+    Exp and(Exp exp1, Exp exp2, String linkToSource) {
         return new And(exp1, exp2, linkToSource);
     }
 
-    final Exp or(Exp exp1, Exp exp2) {
+    Exp or(Exp exp1, Exp exp2) {
         return new Or(exp1, exp2);
     }
-    final Exp or(Exp exp1, Exp exp2, String linkToSource) {
+    Exp or(Exp exp1, Exp exp2, String linkToSource) {
         return new Or(exp1, exp2, linkToSource);
     }
 

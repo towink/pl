@@ -102,20 +102,26 @@ public abstract class Mem extends Exp implements LinkToSource {
     public static class Select extends Mem {
         private Mem mem;
         private String field;
+        private int offset;
         public Select(Mem mem, String field) {
             this.mem = mem;
             this.field = field;
+            offset = -1;
         }
         public Select(Mem mem, String field, String link) {
             super(link);
             this.mem = mem;
             this.field = field;
+            offset = -1;
         }
         public Mem getMem() {
             return mem;
         }
         public String getField() {
             return field;
+        }
+        public int getOffset() {
+            return offset;
         }
         @Override
         public void accept(Visitor v) {

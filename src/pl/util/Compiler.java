@@ -22,11 +22,13 @@ public class Compiler {
      * is run on the virtual machine.
      * 
      * @param p the program to be compiled and run.
+     * @param print
      */
     public static void processAndRun(Program p, boolean print) {
         
         // heap size this procedure will use for the virtual machine
-        int heapSize = 100;
+        final int HEAP_SIZE = 10;
+        final int ACTIVATION_STACK_SIZE = 10;
         
         /* PRINTING */
         if(print) {
@@ -80,7 +82,7 @@ public class Compiler {
         p.accept(addrAssig);
         System.out.println(
             "address assignment complete: " + 
-            addrAssig.memorySize() + 
+            addrAssig.staticMemorySize() + 
             " cells\n");
         
         /* PRINTING WITH ATTRIBUTES */
@@ -91,8 +93,12 @@ public class Compiler {
         }
 
         /* CREATE VIRTUAL MACHINE */
-        VirtualMachine machine
-            = new VirtualMachine(addrAssig.memorySize(), heapSize);
+        VirtualMachine machine = new VirtualMachine(
+                addrAssig.staticMemorySize(),
+                ACTIVATION_STACK_SIZE,
+                HEAP_SIZE,
+                addrAssig.numberOfDisplays()
+        );
 
         /* CODE GENERATION */
         CodeGenerationVisitor codeGen

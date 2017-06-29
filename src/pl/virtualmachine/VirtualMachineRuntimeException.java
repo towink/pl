@@ -2,7 +2,6 @@ package pl.virtualmachine;
 
 import pl.errors.Errors;
 
-
 public abstract class VirtualMachineRuntimeException extends RuntimeException {
     
     public VirtualMachineRuntimeException() {}

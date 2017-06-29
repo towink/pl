@@ -3,7 +3,6 @@ package pl.abstractsyntax;
 import pl.type.Type;
 import pl.procedures.Visitor;
 import pl.abstractsyntax.Program.AbstractSyntaxNode;
-import pl.abstractsyntax.Declaration.*;
 
 /**
 * Represents an expression like x + 2 * y.
