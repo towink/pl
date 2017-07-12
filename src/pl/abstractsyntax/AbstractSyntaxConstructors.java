@@ -1,11 +1,21 @@
 package pl.abstractsyntax;
 
 import java.util.ArrayList;
+import pl.abstractsyntax.Declaration.DeclarationParam;
+import pl.abstractsyntax.Exp.Constant;
+import pl.abstractsyntax.Inst.*;
+import pl.abstractsyntax.Inst.InstructionSwitch.Case;
+import pl.errors.Errors;
 import pl.type.Type;
 
 public class AbstractSyntaxConstructors {
+    
+    public static class AstConstException extends RuntimeException {};
         
-    /* helper types and constructors for the AST constructor */
+    /*
+    Helper types and constructors for the AST constructor.
+    These types themselves are NOT part of the AS.
+    */
     
     public int toInt(String s) {
         return Integer.parseInt(s);
@@ -16,10 +26,30 @@ public class AbstractSyntaxConstructors {
     }
     
     public char toChar(String s) {
-        if(s.length() != 1) {
-            throw new IllegalArgumentException();
+        if(s.length() == 3) {
+            // for example 'a'
+            return s.charAt(1);
         }
-        return s.charAt(0);
+        else if(s.equals("'\\n'")) {
+            return '\n';
+        }
+        else if(s.equals("'\\\\'")) {
+            return '\\';
+        }
+        else if(s.equals("'\\''")) {
+            return '\'';
+        }
+        else if(s.length() == 8) {
+            return (char) Integer.parseInt( s.substring(3, 7), 16 );
+        }
+        throw new IllegalArgumentException();
+    }
+    
+    // string literal to java string
+    public String toString(String s) {
+        //System.out.println(s);
+        // TODO
+        return s.substring(1, s.length() - 1);
     }
 
     public static class DecList extends ArrayList<Declaration> {}
@@ -36,7 +66,7 @@ public class AbstractSyntaxConstructors {
         return list;
     }
 
-    public static class ParamList extends ArrayList<Declaration> {}
+    public static class ParamList extends ArrayList<DeclarationParam> {}
     public ParamList noParams() { return new ParamList(); }
     public ParamList params(ParamList list, Declaration.DeclarationParam dec) {
         list.add(dec);
@@ -61,9 +91,9 @@ public class AbstractSyntaxConstructors {
         return list;
     }
 
-    public static class CaseList extends ArrayList<Inst.InstructionSwitch.Case> {}
+    public static class CaseList extends ArrayList<Case> {}
     public CaseList noCases() { return new CaseList(); }
-    public CaseList cases(CaseList list, Inst.InstructionSwitch.Case c) {
+    public CaseList cases(CaseList list, Case c) {
         list.add(c);
         return list;
     }
@@ -80,8 +110,8 @@ public class AbstractSyntaxConstructors {
 
     /* types - definable - composed */
 
-    public Type.DefinedType typeRef(String alias) {
-        return new Type.TypeRef(alias);
+    public Type.DefinedType typeRef(String alias, String link) {
+        return new Type.TypeRef(alias.toLowerCase(), link);
     }
     public Type.DefinedType typeArray(Type.DefinedType baseType, int dim) {
         return new Type.TypeArray(baseType, dim);
@@ -89,11 +119,14 @@ public class AbstractSyntaxConstructors {
     public Type.DefinedType typePointer(Type.DefinedType baseType) {
         return new Type.TypePointer(baseType);
     }
+    public Type.DefinedType typeNullPointer() {
+        return new Type.TypePointer();
+    }
     public Type.DefinedType typeRecord(FieldList fields) {
         return new Type.TypeRecord(fields);
     }
     public Type.TypeRecord.RecordField field(Type.DefinedType type, String id) {
-        throw new UnsupportedOperationException("not implemented");
+        return new Type.TypeRecord.RecordField(id.toLowerCase(), type);
     }
 
     /* program */
@@ -104,235 +137,172 @@ public class AbstractSyntaxConstructors {
 
     /* declarations */
 
-    public Declaration decVar(Type.DefinedType type, String var) {
-        return new Declaration.DeclarationVariable(var, type);
-    }
     public Declaration decVar(Type.DefinedType type, String var, String linkToSource) {
-        return new Declaration.DeclarationVariable(var, type, linkToSource);
+        return new Declaration.DeclarationVariable(var.toLowerCase(), type, linkToSource);
     }
 
-    public Declaration decType(String alias, Type.DefinedType type) {
-        return new Declaration.DeclarationType(alias, type, null);
-    }
-    public Declaration decType(String alias, Type.DefinedType type, String link) {
-        return new Declaration.DeclarationType(alias, type, link);
+    public Declaration decType(Type.DefinedType type, String alias, String link) {
+        return new Declaration.DeclarationType(alias.toLowerCase(), type, link);
     }
 
-    public Declaration decProc(String alias, ParamList params, Inst inst) {
-        return new Declaration.DeclarationProc(alias, (Declaration.DeclarationParam[])params.toArray(), inst);
-    }
     public Declaration decProc(String alias, ParamList params, Inst inst, String link) {
-        return new Declaration.DeclarationProc(alias, link, (Declaration.DeclarationParam[])params.toArray(), inst);
+        return new Declaration.DeclarationProc(alias.toLowerCase(), link, params, inst);
     }
 
-    public Declaration.DeclarationParam decParam(Type.DefinedType type, boolean mode, String ident) {
-        return new Declaration.DeclarationParam(ident, type, mode);
-    }
     public Declaration.DeclarationParam decParam(Type.DefinedType type, boolean mode, String ident, String link) {
-        return new Declaration.DeclarationParam(ident, type, mode, link);
+        return new Declaration.DeclarationParam(ident.toLowerCase(), type, mode, link);
     }
 
     /* instructions */
 
     /* instructions - general */
 
-    public Inst assig(Exp mem, Exp exp) {
-        // TODO check if mem is really a mem
-        return new Inst.InstructionAssignment((Mem)mem, exp);
-    }
     public Inst assig(Exp mem, Exp exp, String linkToSource) {
-        // TODO check if mem is really a mem
-        return new Inst.InstructionAssignment((Mem)mem, exp, linkToSource);
+        if(!mem.isMem()) {
+            Errors.printError(exp, Errors.ERROR_ASTCONST_ASSIGN);
+            throw new AstConstException();
+        }
+        return new InstructionAssignment((Mem)mem, exp, linkToSource);
     }
 
     public Inst block(DecList decs, InstList insts) {
-        return new Inst.InstructionBlock((Declaration[])decs.toArray(), insts);
+        return new InstructionBlock(decs, insts);
     }
 
-    public Inst call(String ident, ArgList args) {
-        return new Inst.InstructionCall(ident, (Exp[])args.toArray());
-    }
     public Inst call(String ident, ArgList args, String link) {
-        return new Inst.InstructionCall(ident, (Exp[])args.toArray(), link);
+        return new InstructionCall(ident.toLowerCase(), args, link);
     }
 
     /* instructions - IO */
 
-    public Inst write(Exp exp) {
-        return new Inst.InstructionWrite(exp);
-    }
     public Inst write(Exp exp, String linkToSource) {
-        return new Inst.InstructionWrite(exp, linkToSource);
+        return new InstructionWrite(exp, linkToSource);
     }
 
-    public Inst read(Exp exp) {
-        // TODO check if exp is really a mem
-        return new Inst.InstructionRead((Mem)exp);
-    }
     public Inst read(Exp exp, String linkToSource) {
-        // TODO check if exp is really a mem
-        return new Inst.InstructionRead((Mem)exp, linkToSource);
+        if(!exp.isMem()) {
+            Errors.printError(exp, Errors.ERROR_ASTCONST_READ);
+            throw new AstConstException();
+        }
+        return new InstructionRead((Mem)exp, linkToSource);
     }
 
     /* instructions - memory */
 
-    public Inst new_(Exp mem) {
-        // TODO check if exp is really a pointer
-        return new Inst.InstructionNew((Mem)mem);
-    }
     public Inst new_(Exp mem, String linkToSource) {
-        return new Inst.InstructionNew((Mem)mem, linkToSource);
+        if(!mem.isMem()) {
+            Errors.printError(mem, Errors.ERROR_ASTCONST_NEW);
+            throw new AstConstException();
+        }
+        return new InstructionNew((Mem)mem, linkToSource);
     }
 
-    public Inst free(Exp mem) {
-        return new Inst.InstructionFree((Mem)mem);
-    }
     public Inst free(Exp mem, String linkToSource) {
-        return new Inst.InstructionFree((Mem)mem, linkToSource);
+        if(!mem.isMem()) {
+            Errors.printError(mem, Errors.ERROR_ASTCONST_FREE);
+            throw new AstConstException();
+        }
+        return new InstructionFree((Mem)mem, linkToSource);
     }
 
     /* instructions - control structures */
 
-    public Inst while_(Exp condition, Inst body) {
-        return new Inst.InstructionWhile(condition, body);
-    }
     public Inst while_(Exp condition, Inst body, String linkToSource) {
-        return new Inst.InstructionWhile(condition, body, linkToSource);
+        return new InstructionWhile(condition, body, linkToSource);
     }
 
-    public Inst doWhile(Inst body, Exp condition) {
-        throw new UnsupportedOperationException("not implemented");
-    }
     public Inst doWhile(Inst body, Exp condition, String linkToSource) {
-        throw new UnsupportedOperationException("not implemented");
+        return new InstructionDoWhile(condition, body, linkToSource);
     }
 
-    public Inst ifThen(Exp condition, Inst body) {
-        return new Inst.InstructionIfThen(condition, body);
-    }
     public Inst ifThen(Exp condition, Inst body, String linkToSource) {
-        return new Inst.InstructionIfThen(condition, body, linkToSource);
+        return new InstructionIfThen(condition, body, linkToSource);
     }
-
-    public Inst ifThenElse(Exp condition, Inst body1, Inst body2) {
-        return new Inst.InstructionIfThenElse(condition, body1, body2);
-    }
+    
     public Inst ifThenElse(Exp condition, Inst body1, Inst body2, String linkToSource) {
-        return new Inst.InstructionIfThenElse(condition, body1, body2, linkToSource);
+        return new InstructionIfThenElse(condition, body1, body2, linkToSource);
     }
 
     // switch WITHOUT default
-    public Inst switch_(Exp exp, CaseList cases) {
-        throw new UnsupportedOperationException("not implemented");
-    }
     public Inst switch_(Exp exp, CaseList cases, String linkToSource) {
-        throw new UnsupportedOperationException("not implemented");
+        return new InstructionSwitch(exp, cases, linkToSource);
     }
 
-    public Inst switchDefault(Exp exp, CaseList cases, Inst defaultInst) {
-        return new Inst.InstructionSwitch(exp, cases, defaultInst);
-    }
     public Inst switchDefault(Exp exp, CaseList cases, Inst defaultInst, String linkToSource) {
-        return new Inst.InstructionSwitch(exp, cases, defaultInst, linkToSource);
+        return new InstructionSwitch(exp, cases, defaultInst, linkToSource);
     }
 
-    public Inst.InstructionSwitch.Case case_(Exp exp, Inst inst) {
-        throw new UnsupportedOperationException("not implemented");
-    }
-    public Inst.InstructionSwitch.Case case_(Exp exp, Inst inst, String linkToSource) {
-        throw new UnsupportedOperationException("not implemented");
+    public Case case_(Exp exp, Inst inst, String linkToSource) {
+        if(!exp.isConstant()) {
+            Errors.printError(exp, Errors.ERROR_ASTCONST_CASE);
+            throw new AstConstException();
+        }
+        return new Case((Constant)exp, inst, linkToSource);
     }
 
     /* expressions */
 
     /* constants */
 
-    public Exp constantInt(int val) { return new Exp.ConstantInt(val); }
-    public Exp constantBool(boolean val) { return new Exp.ConstantBool(val); }
-    public Exp constantReal(double val) { return new Exp.ConstantReal(val); }
-    public Exp constantChar(char val) { return new Exp.ConstantChar(val); }
-    public Exp constantString(String val) { return new Exp.ConstantString(val); }
+    public Exp constantInt(int val, String linkToSource) { return new Exp.ConstantInt(val, linkToSource); }
+    public Exp constantBool(boolean val, String linkToSource) { return new Exp.ConstantBool(val, linkToSource); }
+    public Exp constantReal(double val, String linkToSource) { return new Exp.ConstantReal(val, linkToSource); }
+    public Exp constantChar(char val, String linkToSource) { return new Exp.ConstantChar(val, linkToSource); }
+    public Exp constantString(String val, String linkToSource) { return new Exp.ConstantString(val, linkToSource); }
+    public Exp constantNull(String linkToSource) { return new Exp.ConstantNull(linkToSource); }
 
     /* mems */
 
-    public Exp variable(String name) {
-        return new Mem.Variable(name);
-    }
     public Exp variable(String name, String linkToSource) {
-        return new Mem.Variable(name, linkToSource);
-    }
-
-    public Exp index(Exp mem, Exp exp) {
-        return new Mem.Index((Mem)mem, exp);
+        return new Mem.Variable(name.toLowerCase(), linkToSource);
     }
     public Exp index(Exp mem, Exp exp, String linkToSource) {
+        if(!mem.isMem()) {
+            Errors.printError(mem, Errors.ERROR_ASTCONST_INDEX);
+            throw new AstConstException();
+        }
         return new Mem.Index((Mem)mem, exp, linkToSource);
     }
-
-    public Exp select(Exp mem, String field) {
-        return new Mem.Select((Mem)mem, field);
-    }
     public Exp select(Exp mem, String field, String linkToSource) {
-        return new Mem.Select((Mem)mem, field, linkToSource);
-    }
-
-    public Exp deref(Exp mem) {
-        return new Mem.Dereference((Mem)mem);
+        if(!mem.isMem()) {
+            Errors.printError(mem, Errors.ERROR_ASTCONST_SELECT);
+            throw new AstConstException();
+        }
+        return new Mem.Select((Mem)mem, field.toLowerCase(), linkToSource);
     }
     public Exp deref(Exp mem, String linkToSource) {
+        if(!mem.isMem()) {
+            Errors.printError(mem, Errors.ERROR_ASTCONST_DEREF);
+            throw new AstConstException();
+        }
         return new Mem.Dereference((Mem)mem, linkToSource);
     }
 
     /* unary operations - arithmetic */
 
-    public Exp signChange(Exp exp) {
-        return new Exp.SignChange(exp);
-    }
     public Exp signChange(Exp exp, String linkToSource) {
         return new Exp.SignChange(exp, linkToSource);
     }
 
     /* unary operations - logical */
 
-    public Exp not(Exp exp) {
-        return new Exp.Not(exp);
-    }
     public Exp not(Exp exp, String linkToSource) {
         return new Exp.Not(exp, linkToSource);
     }
 
     /* unary operations - explicit conversions */
 
-    public Exp conversionInt(Exp exp) {
-        return new Exp.ConversionInt(exp);
-    }
     public Exp conversionInt(Exp exp, String linkToSource) {
         return new Exp.ConversionInt(exp, linkToSource);
-    }
-
-    public Exp conversionBool(Exp exp) {
-        return new Exp.ConversionBool(exp);
     }
     public Exp conversionBool(Exp exp, String linkToSource) {
         return new Exp.ConversionBool(exp, linkToSource);
     }
-
-    public Exp conversionReal(Exp exp) {
-        return new Exp.ConversionReal(exp);
-    }
     public Exp conversionReal(Exp exp, String linkToSource) {
         return new Exp.ConversionReal(exp, linkToSource);
     }
-
-    public Exp conversionChar(Exp exp) {
-        return new Exp.ConversionChar(exp);
-    }
     public Exp conversionChar(Exp exp, String linkToSource) {
         return new Exp.ConversionChar(exp, linkToSource);
-    }
-
-    public Exp conversionString(Exp exp) {
-        return new Exp.ConversionString(exp);
     }
     public Exp conversionString(Exp exp, String linkToSource) {
         return new Exp.ConversionString(exp, linkToSource);
@@ -342,45 +312,23 @@ public class AbstractSyntaxConstructors {
 
     /* binary expressions - miscellaneous */
 
-    public Exp chainElement(Exp exp1, Exp exp2) {
-        return new Exp.ChainElement(exp1, exp2);
-    }
     public Exp chainElement(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.ChainElement(exp1, exp2, linkToSource);
     }
 
     /* binary operations - arithmetic */
 
-    public Exp sum(Exp exp1, Exp exp2) {
-        return new Exp.Sum(exp1, exp2);
-    }
     public Exp sum(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Sum(exp1, exp2, linkToSource);
-    }
-
-    public Exp prod(Exp exp1, Exp exp2) {
-        return new Exp.Product(exp1, exp2);
     }
     public Exp prod(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Product(exp1, exp2, linkToSource);
     }
-
-    public Exp quot(Exp exp1, Exp exp2) {
-        return new Exp.Quotient(exp1, exp2);
-    }
     public Exp quot(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Quotient(exp1, exp2, linkToSource);
     }
-
-    public Exp diff(Exp exp1, Exp exp2) {
-        return new Exp.Difference(exp1, exp2);
-    }
     public Exp diff(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Difference(exp1, exp2, linkToSource);
-    }
-
-    public Exp rest(Exp exp1, Exp exp2) {
-        return new Exp.Rest(exp1, exp2);
     }
     public Exp rest(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Rest(exp1, exp2, linkToSource);
@@ -388,43 +336,20 @@ public class AbstractSyntaxConstructors {
 
     /* binary expressions - relational */
 
-    public Exp equal(Exp exp1, Exp exp2) {
-        return new Exp.Equal(exp1, exp2);
-    }
     public Exp equal(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Equal(exp1, exp2, linkToSource);
-    }
-
-    public Exp unequal(Exp exp1, Exp exp2) {
-        return new Exp.Unequal(exp1, exp2);
     }
     public Exp unequal(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Unequal(exp1, exp2, linkToSource);
     }
-
-    public Exp less(Exp exp1, Exp exp2) {
-        return new Exp.Less(exp1, exp2);
-    }
     public Exp less(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Less(exp1, exp2, linkToSource);
-    }
-
-    public Exp lessEqual(Exp exp1, Exp exp2) {
-        return new Exp.LessEqual(exp1, exp2);
     }
     public Exp lessEqual(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.LessEqual(exp1, exp2, linkToSource);
     }
-
-    public Exp greater(Exp exp1, Exp exp2) {
-        return new Exp.Greater(exp1, exp2);
-    }
     public Exp greater(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Greater(exp1, exp2, linkToSource);
-    }
-
-    public Exp greaterEqual(Exp exp1, Exp exp2) {
-        return new Exp.GreaterEqual(exp1, exp2);
     }
     public Exp greaterEqual(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.GreaterEqual(exp1, exp2, linkToSource);
@@ -432,17 +357,11 @@ public class AbstractSyntaxConstructors {
 
     /* binary operations - logical */
 
-    public Exp and(Exp exp1, Exp exp2) {
-        return new Exp.And(exp1, exp2);
-    }
     public Exp and(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.And(exp1, exp2, linkToSource);
-    }
-
-    public Exp or(Exp exp1, Exp exp2) {
-        return new Exp.Or(exp1, exp2);
     }
     public Exp or(Exp exp1, Exp exp2, String linkToSource) {
         return new Exp.Or(exp1, exp2, linkToSource);
     }
+    
 }

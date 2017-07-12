@@ -1,0 +1,163 @@
+// let the user enter a list of integers until ...
+
+// represents a list of integers
+TYPE STRUCT {
+    INT elem;
+    List* next;
+} List;
+
+// recursively prints the list
+PROC printList(List& list) {
+    WRITE list.elem;
+    IF list.next != NULL THEN {
+        CALL printList WITH *(list.next);
+    }
+}
+
+// gets the length of the list
+PROC length(List& list, INT& result) {
+    IF list.next == NULL THEN {
+        result = 1;
+    }
+    ELSE {
+        VAR INT resultRest;
+        CALL length WITH *(list.next), resultRest;
+        result = 1 + resultRest;
+    }
+}
+
+// appends am element to the end of the list
+PROC add(List& list, INT x) {
+    if list.next == null then {
+        new list.next;
+        *(list.next).elem = x;
+        *(list.next).next = NULL;
+    }
+    else {
+        call add with *(list.next), x;
+    }
+}
+
+PROC get(List& list, INT i, INT& res) {
+    IF(i == 0) THEN {
+        res = list.elem;
+    }
+    ELSE {
+        IF(list.next != NULL) THEN {
+            CALL get WITH *(list.next), i - 1, res;
+        }
+        ELSE {
+            WRITE "illegal arguments for get";
+        }
+    }
+}
+PROC set(List& list, INT i, INT toSet) {
+    IF(i == 0) THEN {
+        list.elem = toSet;
+    }
+    ELSE {
+        IF(list.next != NULL) THEN {
+            CALL set WITH *(list.next), i - 1, toSet;
+        }
+        ELSE {
+            WRITE "illegal arguments for set";
+        }
+    }
+}
+
+
+// swaps the element at index x with the one at index y in list
+PROC swap(List& list, INT x, INT y) {
+    VAR INT length;
+    CALL length with list, length;
+    IF(((x < 0) || (x >= length)) || ((y < 0) || (y >= length))) THEN {
+        WRITE "illegal arguments for swap";
+    }
+    ELSE {
+        VAR INT elemAtX;
+        VAR INT elemAtY;
+        CALL get WITH list, x, elemAtX;
+        CALL get WITH list, y, elemAtY;
+        CALL set WITH list, x, elemAtY;
+        CALL set WITH list, y, elemAtX;
+    }
+}
+
+PROC fillListWithUserInput(List& list, INT l) {
+
+    VAR INT input;
+
+    READ input;
+    list.elem = input;
+
+    IF(l > 1) THEN {
+        NEW list.next;
+        CALL fillListWithUserInput WITH *(list.next), l - 1;
+    }
+    // we have to set the nullpointer explicitly
+    ELSE {
+        list.next = NULL;
+    }
+
+}
+
+// sort the array using the insertion sort algorithm
+PROC bubbleSort(List& list) {
+    VAR INT i;
+    VAR INT length;
+    CALL length WITH list, length;
+    i = 0;
+    WHILE i < length - 1 {
+        VAR INT j;
+        j = 0;
+        WHILE j < length - i - 1 {
+            VAR INT elemAtJ;
+            VAR INT elemAtJPlus1;
+            CALL get WITH list, j, elemAtJ;
+            CALL get WITH list, j+1, elemAtJPlus1;
+            IF(elemAtJ > elemAtJPlus1) THEN {
+                CALL swap WITH list, j, j + 1;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
+ 
+
+
+{
+
+    VAR List list;
+    VAR INT length;
+
+    WRITE "enter the length of the list you wish to input:";
+    READ length;
+    
+    IF length <= 0 THEN {
+        WRITE "please enter a value greater than 0";
+    }
+    ELSE {
+        VAR INT choice;
+
+        WRITE "ok, enter your list:";
+        CALL fillListWithUserInput WITH list, length;
+        WRITE "you entered:";
+        CALL printList WITH list;
+
+        WRITE "select an algorithm to sort your list with (1 = Bubblesort)";
+        READ choice;
+        SWITCH choice {
+            CASE 1: {
+                WRITE "sorting with bubble sort:";
+                CALL bubbleSort WITH list;
+                CALL printList WITH list;
+            }
+            DEFAULT: WRITE "invalid choice";
+        }
+
+        
+    }
+    
+}

@@ -1,0 +1,78 @@
+// all of this should be parsed without errors
+
+vAr Int x;
+VAR sTRing s
+
+type int myint1;
+type int myint2;
+
+type STRUCT { 
+    myInt1 hola;
+    myInt2 quetal;
+    char c;
+    real[100] bigarray;
+    int* p;
+    
+} niceStruct;
+
+VAR niceStruct myStruct;
+
+VAR niceStruct* myStructP;
+
+PROC f(float a, int& b)
+{
+    var int local;
+    read local;
+    write a + local;
+    {
+        var string s;
+        s = "this is a block in a block";
+        b = local;
+    }  
+};
+
+{
+    cAlL f with 42.42, x;
+    
+    myStruct.myInt1 = 1;
+    myStruct.bigarray[41 + myStruct.myInt1] = 42.42e-42;
+
+
+    new myStructP;
+    new myStructP.p;
+    myStructP->p = 42;
+    write myStructP->p;
+    delete myStructP;
+    
+
+    WHILE x < 101 {
+        x = x + <int>2.99;
+    };
+
+    DO {
+        x = x - 1;
+    } WHILE x > 0;
+
+    if true then {
+        WRITE "i love this";
+    }
+
+    if x == 0 then {
+        write "x is 0";
+    }else { write "x is not 0";}
+
+
+    switch 4 + 2 {
+        case 6 : write "correcto";
+        case '\\' : write "incorrecto";
+    };
+
+    switch 4 + 2 {
+        case 6 : write "correcto";
+        case '\\' : write "incorrecto";
+        default : write "ninguna de las 2 cosas";
+    }
+
+}
+
+    

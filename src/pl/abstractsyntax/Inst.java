@@ -63,15 +63,15 @@ public abstract class Inst
      */
     public static class InstructionBlock extends Inst {
         
-        private Declaration[] decs;
+        private ArrayList<Declaration> decs;
         private ArrayList<Inst> insts;
         
         public InstructionBlock(ArrayList<Inst> insts) {
-            this(new Declaration[0], insts);
+            this(new ArrayList<Declaration>(), insts);
         }
         
         public InstructionBlock(
-                Declaration[] decs,
+                ArrayList<Declaration> decs,
                 ArrayList<Inst> insts
         ) {
             this.decs = decs;
@@ -82,7 +82,7 @@ public abstract class Inst
         public void accept(Visitor v) { v.visit(this); }
         
         public ArrayList<Inst> getInsts() { return insts; }
-        public Declaration[] getDecs() { return decs; }
+        public ArrayList<Declaration> getDecs() { return decs; }
         
         
     }
@@ -90,17 +90,17 @@ public abstract class Inst
     public static class InstructionCall extends Inst {
         
         private String identProc;
-        private Exp[] args;
+        private ArrayList<Exp> args;
         private DeclarationProc decProc;
 
-        public InstructionCall(String identProc, Exp[] args) {
+        public InstructionCall(String identProc, ArrayList<Exp> args) {
             this.identProc = identProc;
             this.args = args;
         }
 
         public InstructionCall(
                 String identProc,
-                Exp[] args,
+                ArrayList<Exp> args,
                 String linkToSource
         ) {
             super(linkToSource);
@@ -112,7 +112,7 @@ public abstract class Inst
         public void accept(Visitor v) { v.visit(this); }
         
         public String getIdentProc() { return identProc; }
-        public Exp[] getArgs() { return args; }
+        public ArrayList<Exp> getArgs() { return args; }
         public DeclarationProc getDecProc() { return decProc; }
 
         public void setDecProc(DeclarationProc decProc) {
@@ -242,6 +242,37 @@ public abstract class Inst
         public Inst getBody() { return body; }
         
     }
+    
+    /**
+     * Inst representing a do while loop.
+     */
+    public static class InstructionDoWhile extends Inst {
+        
+        private Exp condition;
+        private Inst body;
+        
+        public InstructionDoWhile(Exp condition, Inst body) {
+            this.condition = condition;
+            this.body = body;
+        }
+        
+        public InstructionDoWhile(
+                Exp condition,
+                Inst body,
+                String linkToSource
+        ) {
+            super(linkToSource);
+            this.condition = condition;
+            this.body = body;
+        }
+        
+        @Override
+        public void accept(Visitor v) { v.visit(this); }
+        
+        public Exp getCondition() { return condition; }
+        public Inst getBody() { return body; }
+        
+    }
 
     /**
      * Inst representing an if-then statement.
@@ -338,11 +369,28 @@ public abstract class Inst
         public InstructionSwitch(
                 Exp exp,
                 ArrayList<Case> cases,
+                String linkToSource
+        ) {
+            this(exp, cases, null, linkToSource);
+        }
+        
+        public InstructionSwitch(
+                Exp exp,
+                ArrayList<Case> cases,
                 Inst defaultInst
         ) {
             this.exp = exp;
             this.cases = cases;
             this.defaultInst = defaultInst;
+        }
+        
+        public InstructionSwitch(
+                Exp exp,
+                ArrayList<Case> cases
+        ) {
+            this.exp = exp;
+            this.cases = cases;
+            this.defaultInst = null;
         }
         
         public static class Case implements LinkToSource {

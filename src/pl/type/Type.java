@@ -8,8 +8,14 @@ import pl.procedures.Visitor;
 
 /**
  * Represents the type of a node in an expression tree.
- * We implement the types as singletons as they do not have any
+ * 
+ * We implement the basic types as singletons as they do not have any
  * attributes and only serve us as 'markers'.
+ * 
+ * A type's toString function is used to print the node's attributes in the
+ * printing visitor. However, the printing visitor may also use the toString
+ * function to print the node itself. The toString's of the types must print the
+ * type in a one-line fashion.
  */
 public abstract class Type {
 
@@ -65,7 +71,6 @@ public abstract class Type {
             size = 0;
         }
         
-        
         @Override
         public void accept(Visitor v) { v.visit(this); }
         
@@ -86,9 +91,6 @@ public abstract class Type {
 
     public static class TypeInt extends AtomicDefinedType {
         private TypeInt() {}
-        public static TypeInt getInstance() {
-            return INT;
-        }
         @Override
         public void accept(Visitor v) { v.visit(this); }
         @Override
@@ -97,9 +99,6 @@ public abstract class Type {
 
     public static class TypeBool extends AtomicDefinedType {
         private TypeBool() {}
-        public static TypeBool getInstance() {
-            return BOOL;
-        }
         @Override
         public void accept(Visitor v) { v.visit(this); }
         @Override
@@ -108,9 +107,6 @@ public abstract class Type {
 
     public static class TypeReal extends AtomicDefinedType {
         private TypeReal() {}
-        public static TypeReal getInstance() {
-            return REAL;
-        }
         @Override
         public void accept(Visitor v) { v.visit(this); }
         @Override
@@ -119,9 +115,6 @@ public abstract class Type {
 
     public static class TypeChar extends AtomicDefinedType {
         private TypeChar() {}
-        public static TypeChar getInstance() {
-            return CHAR;
-        }
         @Override
         public void accept(Visitor v) { v.visit(this); }
         @Override
@@ -130,20 +123,14 @@ public abstract class Type {
 
     public static class TypeString extends AtomicDefinedType {
         private TypeString() {}
-        public static TypeString getInstance() {
-            return STRING;
-        }
         @Override
         public void accept(Visitor v) { v.visit(this); }
         @Override
         public String toString() {return "STRING";}
     }
-
+    
     public static class TypeError extends Type {
         private TypeError() {}
-        public static TypeError getInstance() {
-            return ERROR;
-        }
         @Override
         public void accept(Visitor v) { v.visit(this); }
         @Override
@@ -152,9 +139,6 @@ public abstract class Type {
 
     public static class TypeOk extends Type {
         private TypeOk() {}
-        public static TypeOk getInstance() {
-            return OK;
-        }
         @Override
         public void accept(Visitor v) { v.visit(this); }
         @Override
@@ -209,7 +193,7 @@ public abstract class Type {
         public void accept(Visitor v) { v.visit(this); }
         @Override
         public String toString() {
-            return "typeref " + decReferencedType + " " + alias;
+            return "reference to "  + alias;
         }
     }
 
@@ -235,12 +219,13 @@ public abstract class Type {
         @Override
         public void accept(Visitor v) { v.visit(this); }
         @Override
-        public String toString() {return baseType + "[" + dim + "]";}
+        public String toString() { return baseType + "[" + dim + "]"; }
     }
 
     /* records (structs) */
 
     public static class TypeRecord extends DefinedType {
+        
         private List<RecordField> fields;
         public TypeRecord(List<RecordField> fields) {
             this.fields = fields;
@@ -281,38 +266,48 @@ public abstract class Type {
             }
             return res + "}";
         }
-
-        public class RecordField {
-            private String identifier;
-            private DefinedType type;
-            private int offset;
-            public RecordField(String identifier, DefinedType type) {
-                this.identifier = identifier;
-                this.type = type;
-                offset = 0;
-                fields.add(this);
-            }
-            public String getIdentifier() { return identifier; }
-            public DefinedType getType() { return type; }
-            public int getOffset() { return offset; }
-            public void setOffset(int offset) { this.offset = offset; }
-            @Override
-            public String toString() {
-                return type + " " + identifier;
-            }
+        
+    }
+    
+    public static class RecordField {
+        
+        private String identifier;
+        private DefinedType type;
+        private int offset;
+        
+        public RecordField(String identifier, DefinedType type) {
+            this.identifier = identifier;
+            this.type = type;
+            offset = 0;
         }
+        
+        public String getIdentifier() { return identifier; }
+        public DefinedType getType() { return type; }
+        public int getOffset() { return offset; }
+        public void setOffset(int offset) { this.offset = offset; }
+        
+        @Override
+        public String toString() {
+            return type + " " + identifier;
+        }
+        
     }
 
     /* pointers */
 
     public static class TypePointer extends DefinedType {
-        private DefinedType baseType;
+        private final DefinedType baseType;
+        // null pointer
+        public TypePointer() {
+            this.baseType = null;
+        }
         public TypePointer(DefinedType baseType) {
             this.baseType = baseType;
         }
         public DefinedType getBaseType() {
             return baseType;
         }
+        public boolean isNullPointer() { return baseType == null; }
         @Override
         public boolean isPointer() { return true; }
         @Override
@@ -321,6 +316,7 @@ public abstract class Type {
         public void accept(Visitor v) { v.visit(this); }
         @Override
         public String toString() {
+            if(isNullPointer()) { return "NULLPOINTER"; }
             return "pointer to " + baseType;
         }
     }

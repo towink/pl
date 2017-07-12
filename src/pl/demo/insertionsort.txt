@@ -1,0 +1,46 @@
+VAR INT[10] toSort;
+VAR INT[10] toSort2;
+
+// sort the array using the insertions sort algorithm
+PROC insertionSort(INT[10]& array) {
+    VAR INT i;
+    i = 1;
+    WHILE i < 10 {
+        VAR INT tmp;
+        VAR INT j;
+        tmp = array[i];
+        j = i;
+        WHILE j > 0 {
+            IF (tmp < array[j-1]) THEN {
+                array[j] = array[j-1];
+                j = j - 1;
+            }
+        }
+        array[j] = tmp;
+        i = i + 1;
+    }
+}
+
+// puts the numbers 10,...,1 in an int array of lenth 10
+PROC fillArray(INT[10]& array) {
+    VAR INT i;
+    VAR INT n;
+    i = 0;
+    n = 10;
+    WHILE i < 10 {
+        array[i] = n;
+        n = n - 1;
+        i = i + 1;
+    }
+}
+
+{
+    VAR INT* myPointer;
+    myPointer = NULL;
+
+    CALL fillArray WITH toSort;
+    CALL fillArray WITH toSort2;
+    CALL insertionSort WITH toSort;
+}
+
+

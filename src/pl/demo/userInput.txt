@@ -1,0 +1,13 @@
+// read user inputs from console until "exit" is entered
+
+{
+
+    VAR STRING input;
+    
+    DO {
+        READ input;
+        WRITE "you entered: " + input;
+    }
+    WHILE input != "exit";
+
+}

@@ -118,8 +118,8 @@ public class LinkingVisitor extends Visitor {
         DeclarationType dec = symbolTable.decType(r.getAlias());
         if(dec == null) {
             error = true;
-            Errors.printErrorFancy(
-                dec, Errors.ERROR_ID_NOT_DECLARED +  ": " + r.getAlias());
+            Errors.printError(
+                r, Errors.ERROR_LINKING_ID_NOT_DECLARED +  ": " + r.getAlias());
         }
         else {
             r.setDecReferencedType(dec);
@@ -134,8 +134,8 @@ public class LinkingVisitor extends Visitor {
         // if the declared variable is already in the table --> error
         if(symbolTable.decVarDuplicated(dec.getIdent())) {
             error = true;
-            Errors.printErrorFancy(
-                    dec, Errors.ERROR_ID_DUPLICATED + ": " + dec.getIdent());
+            Errors.printError(
+                    dec, Errors.ERROR_LINKING_ID_DUPLICATED + ": " + dec.getIdent());
         }
         // otherwise add new entry in table
         else {
@@ -151,8 +151,8 @@ public class LinkingVisitor extends Visitor {
         // if the declared variable is already in the table --> error
         if(symbolTable.decTypeDuplicated(dec.getIdent())) {
             error = true;
-            Errors.printErrorFancy(
-                    dec, Errors.ERROR_ID_DUPLICATED + ": " + dec.getIdent());
+            Errors.printError(
+                    dec, Errors.ERROR_LINKING_ID_DUPLICATED + ": " + dec.getIdent());
         }
         // otherwise add new entry in table
         else {
@@ -168,8 +168,8 @@ public class LinkingVisitor extends Visitor {
         // if the declared variable is already in the table --> error
         if(symbolTable.decProcDuplicated(dec.getIdent())) {
             error = true;
-            Errors.printErrorFancy(
-                    dec, Errors.ERROR_ID_DUPLICATED + ": " + dec.getIdent());
+            Errors.printError(
+                    dec, Errors.ERROR_LINKING_ID_DUPLICATED + ": " + dec.getIdent());
         }
         // otherwise add new entry in table
         else {
@@ -208,6 +208,7 @@ public class LinkingVisitor extends Visitor {
         for(Inst inst : block.getInsts()) {
             inst.accept(this);
         }
+        symbolTable.removeLevel();
     }
     
     @Override
@@ -215,9 +216,9 @@ public class LinkingVisitor extends Visitor {
         DeclarationProc decProc = symbolTable.decProc(call.getIdentProc());
         if(decProc == null) {
             error = true;
-            Errors.printErrorFancy(
+            Errors.printError(
                     call,
-                    Errors.ERROR_ID_NOT_DECLARED + ": " + call.getIdentProc()
+                    Errors.ERROR_LINKING_ID_NOT_DECLARED + ": " + call.getIdentProc()
             );
         }
         else {
@@ -240,8 +241,8 @@ public class LinkingVisitor extends Visitor {
         // --> error
         if(decVar == null) {
             error = true;
-            Errors.printErrorFancy(
-                    var, Errors.ERROR_ID_NOT_DECLARED + ": " + var.getName());
+            Errors.printError(
+                    var, Errors.ERROR_LINKING_ID_NOT_DECLARED + ": " + var.getName());
         }
         // otherwise we link its declaration to this variable
         else {

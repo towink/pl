@@ -115,6 +115,10 @@ public abstract class Visitor {
         inst.getCondition().accept(this);
         inst.getBody().accept(this);
     }
+    public void visit(InstructionDoWhile inst) {
+        inst.getBody().accept(this);
+        inst.getCondition().accept(this);
+    }
     public void visit(InstructionIfThen inst) {
         inst.getCondition().accept(this);
         inst.getBody().accept(this);
@@ -144,6 +148,7 @@ public abstract class Visitor {
     public void visit(ConstantReal exp) {visit((Constant)exp);}
     public void visit(ConstantChar exp) {visit((Constant)exp);}
     public void visit(ConstantString exp) {visit((Constant)exp);}
+    public void visit(ConstantNull exp) {visit((Constant)exp);}
 
     /* expressions - mems */
 

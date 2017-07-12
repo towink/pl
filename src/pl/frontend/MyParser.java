@@ -25,7 +25,7 @@ class ProcHeader {
 }
 
 public class MyParser implements MyParserConstants {
-    private AbstractSyntaxConstructors ops;
+    private AbstractSyntaxConstructors ops = new AbstractSyntaxConstructors();
     public void setOps(AbstractSyntaxConstructors ops) {
         this.ops = ops;
     }
@@ -33,9 +33,11 @@ public class MyParser implements MyParserConstants {
         return "( " + token.beginLine + ", " + token.beginColumn + " )";
     }
 
-  final public void nStart() throws ParseException {
-    nProg();
+  final public Program parse() throws ParseException {Program prog;
+    prog = nProg();
     jj_consume_token(0);
+{if ("" != null) return prog;}
+    throw new Error("Missing return statement in function");
   }
 
   final public Program nProg() throws ParseException {DecList decs; Inst inst;
@@ -112,7 +114,7 @@ public class MyParser implements MyParserConstants {
       type = nType0();
       id = jj_consume_token(ident);
       jj_consume_token(40);
-{if ("" != null) return ops.decVar(type, id.image, linkToSource(id));}
+{if ("" != null) return ops.decType(type, id.image, linkToSource(id));}
       break;
       }
     case PROC:{
@@ -279,7 +281,7 @@ public class MyParser implements MyParserConstants {
       }
     case ident:{
       id = jj_consume_token(ident);
-{if ("" != null) return ops.typeRef(id.image);}
+{if ("" != null) return ops.typeRef(id.image, linkToSource(id));}
       break;
       }
     case INT:{
@@ -424,6 +426,7 @@ public class MyParser implements MyParserConstants {
       expLeft = nExp0();
       t = jj_consume_token(50);
       expRight = nExp0();
+      jj_consume_token(40);
 {if ("" != null) return ops.assig(expLeft, expRight, linkToSource(t));}
       break;
       }
@@ -479,24 +482,28 @@ public class MyParser implements MyParserConstants {
     case NEW:{
       t = jj_consume_token(NEW);
       exp = nExp0();
+      jj_consume_token(40);
 {if ("" != null) return ops.new_(exp, linkToSource(t));}
       break;
       }
     case DELETE:{
       t = jj_consume_token(DELETE);
       exp = nExp0();
+      jj_consume_token(40);
 {if ("" != null) return ops.free(exp, linkToSource(t));}
       break;
       }
     case READ:{
       t = jj_consume_token(READ);
       exp = nExp0();
+      jj_consume_token(40);
 {if ("" != null) return ops.read(exp, linkToSource(t));}
       break;
       }
     case WRITE:{
       t = jj_consume_token(WRITE);
       exp = nExp0();
+      jj_consume_token(40);
 {if ("" != null) return ops.write(exp, linkToSource(t));}
       break;
       }
@@ -541,7 +548,7 @@ public class MyParser implements MyParserConstants {
       }
     default:
       jj_la1[14] = jj_gen;
-{if ("" != null) return ops.noArgs();}
+{if ("" != null) return argsh;}
     }
     throw new Error("Missing return statement in function");
   }
@@ -633,38 +640,38 @@ public class MyParser implements MyParserConstants {
   final public Case nRCase(String linkh) throws ParseException {Inst inst; Token n;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case TRUE:{
-      jj_consume_token(TRUE);
+      n = jj_consume_token(TRUE);
       jj_consume_token(51);
       inst = nInst();
-{if ("" != null) return ops.case_(ops.constantBool(true), inst, linkh);}
+{if ("" != null) return ops.case_(ops.constantBool(true, linkToSource(n)), inst, linkh);}
       break;
       }
     case FALSE:{
-      jj_consume_token(FALSE);
+      n = jj_consume_token(FALSE);
       jj_consume_token(51);
       inst = nInst();
-{if ("" != null) return ops.case_(ops.constantBool(false), inst, linkh);}
+{if ("" != null) return ops.case_(ops.constantBool(false, linkToSource(n)), inst, linkh);}
       break;
       }
     case intLiteral:{
       n = jj_consume_token(intLiteral);
       jj_consume_token(51);
       inst = nInst();
-{if ("" != null) return ops.case_(ops.constantInt(ops.toInt(n.image)), inst, linkh);}
+{if ("" != null) return ops.case_(ops.constantInt(ops.toInt(n.image), linkToSource(n)), inst, linkh);}
       break;
       }
     case realLiteral:{
       n = jj_consume_token(realLiteral);
       jj_consume_token(51);
       inst = nInst();
-{if ("" != null) return ops.case_(ops.constantReal(ops.toReal(n.image)), inst, linkh);}
+{if ("" != null) return ops.case_(ops.constantReal(ops.toReal(n.image), linkToSource(n)), inst, linkh);}
       break;
       }
     case charLiteral:{
       n = jj_consume_token(charLiteral);
       jj_consume_token(51);
       inst = nInst();
-{if ("" != null) return ops.case_(ops.constantChar(ops.toChar(n.image)), inst, linkh);}
+{if ("" != null) return ops.case_(ops.constantChar(ops.toChar(n.image), linkToSource(n)), inst, linkh);}
       break;
       }
     default:
@@ -682,42 +689,42 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nRExp0(Exp exph) throws ParseException {Exp exp;
+  final public Exp nRExp0(Exp exph) throws ParseException {Exp exp; Token link;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case 52:{
-      jj_consume_token(52);
+      link = jj_consume_token(52);
       exp = nExp1();
-{if ("" != null) return ops.equal(exph, exp);}
+{if ("" != null) return ops.equal(exph, exp, linkToSource(link));}
       break;
       }
     case 53:{
-      jj_consume_token(53);
+      link = jj_consume_token(53);
       exp = nExp1();
-{if ("" != null) return ops.unequal(exph, exp);}
+{if ("" != null) return ops.unequal(exph, exp, linkToSource(link));}
       break;
       }
     case 54:{
-      jj_consume_token(54);
+      link = jj_consume_token(54);
       exp = nExp1();
-{if ("" != null) return ops.less(exph, exp);}
+{if ("" != null) return ops.less(exph, exp, linkToSource(link));}
       break;
       }
     case 55:{
-      jj_consume_token(55);
+      link = jj_consume_token(55);
       exp = nExp1();
-{if ("" != null) return ops.greater(exph, exp);}
+{if ("" != null) return ops.greater(exph, exp, linkToSource(link));}
       break;
       }
     case 56:{
-      jj_consume_token(56);
+      link = jj_consume_token(56);
       exp = nExp1();
-{if ("" != null) return ops.lessEqual(exph, exp);}
+{if ("" != null) return ops.lessEqual(exph, exp, linkToSource(link));}
       break;
       }
     case 57:{
-      jj_consume_token(57);
+      link = jj_consume_token(57);
       exp = nExp1();
-{if ("" != null) return ops.greaterEqual(exph, exp);}
+{if ("" != null) return ops.greaterEqual(exph, exp, linkToSource(link));}
       break;
       }
     default:
@@ -734,12 +741,12 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nRRExp1(Exp exph) throws ParseException {Exp e1; Exp e2;
+  final public Exp nRRExp1(Exp exph) throws ParseException {Exp e1; Exp e2; Token link;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case 58:{
-      jj_consume_token(58);
+      link = jj_consume_token(58);
       e1 = nExp2();
-      e2 = nRExp1(ops.or(exph, e1));
+      e2 = nRExp1(ops.or(exph, e1, linkToSource(link)));
 {if ("" != null) return e2;}
       break;
       }
@@ -751,19 +758,19 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nRExp1(Exp exph) throws ParseException {Exp e1; Exp e2;
+  final public Exp nRExp1(Exp exph) throws ParseException {Exp e1; Exp e2; Token link;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case 59:{
-      jj_consume_token(59);
+      link = jj_consume_token(59);
       e1 = nExp2();
-      e2 = nRExp1(ops.sum(exph, e1));
+      e2 = nRExp1(ops.sum(exph, e1, linkToSource(link)));
 {if ("" != null) return e2;}
       break;
       }
     case 60:{
-      jj_consume_token(60);
+      link = jj_consume_token(60);
       e1 = nExp2();
-      e2 = nRExp1(ops.diff(exph, e1));
+      e2 = nRExp1(ops.diff(exph, e1, linkToSource(link)));
 {if ("" != null) return e2;}
       break;
       }
@@ -781,12 +788,12 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nRRExp2(Exp exph) throws ParseException {Exp e1; Exp e2;
+  final public Exp nRRExp2(Exp exph) throws ParseException {Exp e1; Exp e2; Token link;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case 61:{
-      jj_consume_token(61);
+      link = jj_consume_token(61);
       e1 = nExp3();
-      e2 = nRExp2(ops.and(exph, e1));
+      e2 = nRExp2(ops.and(exph, e1, linkToSource(link)));
 {if ("" != null) return e2;}
       break;
       }
@@ -798,26 +805,26 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nRExp2(Exp exph) throws ParseException {Exp e1; Exp e2;
+  final public Exp nRExp2(Exp exph) throws ParseException {Exp e1; Exp e2; Token link;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case 45:{
-      jj_consume_token(45);
+      link = jj_consume_token(45);
       e1 = nExp3();
-      e2 = nRExp2(ops.prod(exph, e1));
+      e2 = nRExp2(ops.prod(exph, e1, linkToSource(link)));
 {if ("" != null) return e2;}
       break;
       }
     case 62:{
-      jj_consume_token(62);
+      link = jj_consume_token(62);
       e1 = nExp3();
-      e2 = nRExp2(ops.quot(exph, e1));
+      e2 = nRExp2(ops.quot(exph, e1, linkToSource(link)));
 {if ("" != null) return e2;}
       break;
       }
     case 63:{
-      jj_consume_token(63);
+      link = jj_consume_token(63);
       e1 = nExp3();
-      e2 = nRExp2(ops.rest(exph, e1));
+      e2 = nRExp2(ops.rest(exph, e1, linkToSource(link)));
 {if ("" != null) return e2;}
       break;
       }
@@ -828,23 +835,23 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nExp3() throws ParseException {Exp exp;
+  final public Exp nExp3() throws ParseException {Exp exp; Token link;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case 60:{
-      jj_consume_token(60);
+      link = jj_consume_token(60);
       exp = nExp3();
-{if ("" != null) return ops.signChange(exp);}
+{if ("" != null) return ops.signChange(exp, linkToSource(link));}
       break;
       }
     case 64:{
-      jj_consume_token(64);
+      link = jj_consume_token(64);
       exp = nExp3();
-{if ("" != null) return ops.not(exp);}
+{if ("" != null) return ops.not(exp, linkToSource(link));}
       break;
       }
     case 54:{
-      jj_consume_token(54);
-      exp = nRExp3();
+      link = jj_consume_token(54);
+      exp = nRExp3(link);
 {if ("" != null) return exp;}
       break;
       }
@@ -870,41 +877,41 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nRExp3() throws ParseException {Exp exp;
+  final public Exp nRExp3(Token linkh) throws ParseException {Exp exp;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case INT:{
       jj_consume_token(INT);
       jj_consume_token(55);
       exp = nExp4();
-{if ("" != null) return ops.conversionInt(exp);}
+{if ("" != null) return ops.conversionInt(exp, linkToSource(linkh));}
       break;
       }
     case BOOL:{
       jj_consume_token(BOOL);
       jj_consume_token(55);
       exp = nExp4();
-{if ("" != null) return ops.conversionBool(exp);}
+{if ("" != null) return ops.conversionBool(exp, linkToSource(linkh));}
       break;
       }
     case FLOAT:{
       jj_consume_token(FLOAT);
       jj_consume_token(55);
       exp = nExp4();
-{if ("" != null) return ops.conversionReal(exp);}
+{if ("" != null) return ops.conversionReal(exp, linkToSource(linkh));}
       break;
       }
     case CHAR:{
       jj_consume_token(CHAR);
       jj_consume_token(55);
       exp = nExp4();
-{if ("" != null) return ops.conversionChar(exp);}
+{if ("" != null) return ops.conversionChar(exp, linkToSource(linkh));}
       break;
       }
     case STRING:{
       jj_consume_token(STRING);
       jj_consume_token(55);
       exp = nExp4();
-{if ("" != null) return ops.conversionString(exp);}
+{if ("" != null) return ops.conversionString(exp, linkToSource(linkh));}
       break;
       }
     default:
@@ -922,12 +929,12 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nRExp4(Exp exph) throws ParseException {Exp exp;
+  final public Exp nRExp4(Exp exph) throws ParseException {Exp exp; Token link;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case 65:{
-      jj_consume_token(65);
+      link = jj_consume_token(65);
       exp = nExp5();
-{if ("" != null) return ops.chainElement(exph, exp);}
+{if ("" != null) return ops.chainElement(exph, exp, linkToSource(link));}
       break;
       }
     default:
@@ -964,7 +971,7 @@ public class MyParser implements MyParserConstants {
     case 67:{
       link = jj_consume_token(67);
       id = jj_consume_token(ident);
-      exp = nRExp5(ops.select(ops.deref(exph), id.image, linkToSource(link)));
+      exp = nRExp5(ops.select(ops.deref(exph, linkToSource(link)), id.image, linkToSource(link)));
 {if ("" != null) return exp;}
       break;
       }
@@ -975,12 +982,12 @@ public class MyParser implements MyParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public Exp nExp6() throws ParseException {Exp exp;
+  final public Exp nExp6() throws ParseException {Exp exp; Token link;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case 45:{
-      jj_consume_token(45);
+      link = jj_consume_token(45);
       exp = nExp6();
-{if ("" != null) return ops.deref(exp);}
+{if ("" != null) return ops.deref(exp, linkToSource(link));}
       break;
       }
     case TRUE:
@@ -1008,7 +1015,7 @@ public class MyParser implements MyParserConstants {
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case ident:{
       id = jj_consume_token(ident);
-{if ("" != null) return ops.variable(id.image);}
+{if ("" != null) return ops.variable(id.image, linkToSource(id));}
       break;
       }
     case TRUE:
@@ -1041,37 +1048,37 @@ public class MyParser implements MyParserConstants {
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case intLiteral:{
       lit = jj_consume_token(intLiteral);
-{if ("" != null) return ops.constantInt(ops.toInt(lit.image));}
+{if ("" != null) return ops.constantInt(ops.toInt(lit.image), linkToSource(lit));}
       break;
       }
     case realLiteral:{
       lit = jj_consume_token(realLiteral);
-{if ("" != null) return ops.constantReal(ops.toReal(lit.image));}
+{if ("" != null) return ops.constantReal(ops.toReal(lit.image), linkToSource(lit));}
       break;
       }
     case charLiteral:{
       lit = jj_consume_token(charLiteral);
-{if ("" != null) return ops.constantChar(ops.toChar(lit.image));}
+{if ("" != null) return ops.constantChar(ops.toChar(lit.image), linkToSource(lit));}
       break;
       }
     case stringLiteral:{
       lit = jj_consume_token(stringLiteral);
-{if ("" != null) return ops.constantString(lit.image);}
+{if ("" != null) return ops.constantString(ops.toString(lit.image), linkToSource(lit));}
       break;
       }
     case TRUE:{
       lit = jj_consume_token(TRUE);
-{if ("" != null) return ops.constantBool(true);}
+{if ("" != null) return ops.constantBool(true, linkToSource(lit));}
       break;
       }
     case FALSE:{
       lit = jj_consume_token(FALSE);
-{if ("" != null) return ops.constantBool(false);}
+{if ("" != null) return ops.constantBool(false, linkToSource(lit));}
       break;
       }
     case NULL:{
       lit = jj_consume_token(NULL);
-{if ("" != null) return null;}
+{if ("" != null) return ops.constantNull(linkToSource(lit));}
       break;
       }
     default:

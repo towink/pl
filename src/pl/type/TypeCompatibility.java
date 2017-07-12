@@ -12,6 +12,9 @@ import pl.util.Pair;
  * 
  * Two types t1 and t2 are considered to be compatible if t1 can be converted in
  * t2 and vice versa.
+ * 
+ * Idea: print detailed error messages with reason while types are
+ * not comparable...
  */
 public class TypeCompatibility {
     
@@ -35,9 +38,8 @@ public class TypeCompatibility {
                 return check(t1, t2.toRef().referencedType());
             }
 
-            // equal base type
-            // we can use '==' because atomic types are singletons
-            if(t1 == t2) return true;
+            // equal types are of course compatible
+            if(t1.equals(t2)) return true;
 
             // int and real are compatible
             if(t1 == Type.INT && t2 == Type.REAL) return true;
@@ -78,6 +80,8 @@ public class TypeCompatibility {
             if(t1.isPointer() && t2.isPointer()) {
                 TypePointer p1 = t1.toPointer();
                 TypePointer p2 = t2.toPointer();
+                // if either of them is the null pointer then they are compatible
+                if(p1.isNullPointer() || p2.isNullPointer()) return true;
                 // pointers need to have the same base type
                 return check(p1.getBaseType(), p1.getBaseType());
             }

@@ -52,7 +52,7 @@ public class TypeSizeCalculationVisitor extends Visitor {
 
     @Override
     public void visit(TypePointer type) {
-        // pointers have constant size of 1
+        // pointers have constant size of 1 (also null pointer)
         if(type.sizeNotSet()) {
             type.setSize(1);
             type.getBaseType().accept(this);

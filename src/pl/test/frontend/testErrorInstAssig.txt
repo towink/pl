@@ -1,0 +1,13 @@
+
+TYPE INT myIntType;
+VAR myIntType x;
+VAR STRING s;
+
+{
+    x = 42;
+    s = "HOLA";
+    
+    // error: assign incompatiable types
+    s = x;
+}
+    

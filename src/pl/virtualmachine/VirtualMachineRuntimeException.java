@@ -16,7 +16,7 @@ public abstract class VirtualMachineRuntimeException extends RuntimeException {
         
         public UninitializedMemoryAccessException(int pc, int addr) {
             super(
-                Errors.ERROR_UNINITIALIZED_MEMORY
+                Errors.ERROR_RUNTIME_UNINITIALIZED_MEMORY
                 + ": instruction: " + pc
                 + ", address: " + addr
             );
@@ -31,7 +31,7 @@ public abstract class VirtualMachineRuntimeException extends RuntimeException {
             extends VirtualMachineRuntimeException {
         
         public OutOfBoundsException(int pc) {
-            super(Errors.ERROR_OUT_OF_BOUNDS + ": instruction: " + pc);
+            super(Errors.ERROR_RUNTIME_OUT_OF_BOUNDS + ": instruction: " + pc);
         }
         
     }
@@ -45,7 +45,7 @@ public abstract class VirtualMachineRuntimeException extends RuntimeException {
         
         public InvalidAddressException(int pc, int addr) {
             super(
-                Errors.ERROR_INVALID_ADDRESS
+                Errors.ERROR_RUNTIME_INVALID_ADDRESS
                 + ": instruction: " + pc
                 + ", address: " + addr
             );
@@ -62,7 +62,7 @@ public abstract class VirtualMachineRuntimeException extends RuntimeException {
             extends VirtualMachineRuntimeException {
         
         public TypeException(int pc) {
-            super(Errors.ERROR_TYPE_RUNTIME + ": instruction: " + pc);
+            super(Errors.ERROR_RUNTIME_TYPE_RUNTIME + ": instruction: " + pc);
         }
         
     }

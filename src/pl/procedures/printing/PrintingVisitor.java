@@ -6,6 +6,7 @@ import pl.abstractsyntax.Mem.*;
 import pl.abstractsyntax.Program;
 import pl.abstractsyntax.Declaration;
 import pl.abstractsyntax.Declaration.*;
+import pl.abstractsyntax.Exp;
 import pl.abstractsyntax.Inst;
 import pl.abstractsyntax.Inst.*;
 import pl.abstractsyntax.Program.AbstractSyntaxNode;
@@ -83,26 +84,28 @@ public class PrintingVisitor extends Visitor {
     
     /* atomic types */
     
-    @Override
-    public void visit(TypeInt type) { print("int");}
+    // use these type's own toString function here
     
     @Override
-    public void visit(TypeBool type) { print("bool");}
+    public void visit(TypeInt type) { print(type); }
     
     @Override
-    public void visit(TypeReal type) { print("real");}
+    public void visit(TypeBool type) { print(type); }
     
     @Override
-    public void visit(TypeChar type) { print("char");}
+    public void visit(TypeReal type) { print(type); }
     
     @Override
-    public void visit(TypeString type) { print("string");}
+    public void visit(TypeChar type) { print(type); }
     
     @Override
-    public void visit(TypeOk type) { print("ok");}
+    public void visit(TypeString type) { print(type); }
     
     @Override
-    public void visit(TypeError type) { print("error");}
+    public void visit(TypeOk type) { print(type); }
+    
+    @Override
+    public void visit(TypeError type) { print(type); }
     
     /* composed types */
     
@@ -116,7 +119,7 @@ public class PrintingVisitor extends Visitor {
     
     @Override
     public void visit(TypeRecord type) {
-        println("struct {");
+        println("STRUCT {");
         currIndent += INDENTATION_DEPTH;
         for(TypeRecord.RecordField f : type.getFields()) {
             indent();
@@ -145,8 +148,9 @@ public class PrintingVisitor extends Visitor {
     public void visit(Program prog) {
         for(Declaration d : prog.getDeclarations()) d.accept(this);
         println();
-        if(prog.getInstruction() != null)
+        if(prog.getInstruction() != null) {
             prog.getInstruction().accept(this);
+        }
         printAttributes(prog);
         println();
     }
@@ -155,15 +159,44 @@ public class PrintingVisitor extends Visitor {
 
     @Override
     public void visit(DeclarationVariable dec) {
+        indent();
+        print("VAR ");
         dec.getType().accept(this);
         println(" " + dec.getIdent() + ";");
     }
     
     @Override
     public void visit(DeclarationType dec) {
-        print("typedef ");
+        indent();
+        print("TYPE ");
         dec.getType().accept(this);
         println(" " + dec.getIdent() + ";");
+    }
+    
+    @Override
+    public void visit(DeclarationProc dec) {
+        indent();
+        print("PROC " + dec.getIdent() + "(");
+        for(DeclarationParam p : dec.getParams()) {
+            printParam(p);
+            if(dec.getParams().indexOf(p) != dec.getParams().size() - 1) {
+                print(", ");
+            }
+        }
+        print(")");
+        println();
+        currIndent += INDENTATION_DEPTH;
+        dec.getBody().accept(this);
+        currIndent -= INDENTATION_DEPTH;
+        println();
+    }
+    
+    private void printParam(DeclarationParam p) {
+        p.getType().accept(this);
+        if(p.isParamByRef()) {
+            print("&");
+        }
+        print(" " + p.getIdent());
     }
 
     /* instructions */
@@ -186,8 +219,12 @@ public class PrintingVisitor extends Visitor {
         indent();
         println("{");
         currIndent += INDENTATION_DEPTH;
-        for(Inst i : block.getInsts())
+        for(Declaration dec : block.getDecs()) {
+            dec.accept(this);
+        }
+        for(Inst i : block.getInsts()) {
             i.accept(this);
+        }
         currIndent -= INDENTATION_DEPTH;
         indent();
         print("}");
@@ -195,8 +232,37 @@ public class PrintingVisitor extends Visitor {
         println();
     }
     
+    @Override
+    public void visit(InstructionCall call) {
+        indent();
+        print("CALL ");
+        printAttributes(call);
+        print(call.getIdentProc());
+        if(call.getArgs().size() > 0) {
+            print(" WITH ");
+            for(Exp arg : call.getArgs()) {
+                arg.accept(this);
+                if(call.getArgs().indexOf(arg) != call.getArgs().size() - 1) {
+                    print(", ");
+                }
+            }
+        }
+        print(";");
+        println();
+    }
+    
     /* instructions - IO */
 
+    @Override
+    public void visit(InstructionRead inst) {
+        indent();
+        print("READ ");
+        printAttributes(inst);
+        inst.getMem().accept(this);
+        print(";");
+        println();
+    }
+    
     @Override
     public void visit(InstructionWrite inst) {
         indent();
@@ -206,8 +272,6 @@ public class PrintingVisitor extends Visitor {
         print(";");
         println();
     }
-    
-    // missing: read ...
     
     /* instructions - memory */
     
@@ -245,6 +309,23 @@ public class PrintingVisitor extends Visitor {
         inst.getBody().accept(this);
         currIndent -= INDENTATION_DEPTH;
     }
+    
+    @Override
+    public void visit(InstructionDoWhile inst) {
+        indent();
+        print("DO");
+        printAttributes(inst);
+        println();
+        currIndent += INDENTATION_DEPTH;
+        inst.getBody().accept(this);
+        currIndent -= INDENTATION_DEPTH;
+        indent();
+        print("WHILE ");
+        inst.getCondition().accept(this);
+        print(";");
+        println();
+    }
+    
 
     @Override
     public void visit(InstructionIfThen inst) {
@@ -252,6 +333,7 @@ public class PrintingVisitor extends Visitor {
         print("IF ");
         printAttributes(inst);
         inst.getCondition().accept(this);
+        print(" THEN");
         println();
         currIndent += INDENTATION_DEPTH;
         inst.getBody().accept(this);
@@ -264,6 +346,7 @@ public class PrintingVisitor extends Visitor {
         print("IF ");
         printAttributes(inst);
         inst.getCondition().accept(this);
+        print(" THEN");
         println();
         currIndent += INDENTATION_DEPTH;
         inst.getBodyIf().accept(this);
@@ -282,6 +365,7 @@ public class PrintingVisitor extends Visitor {
         print("SWITCH ");
         printAttributes(inst);
         inst.getExp().accept(this);
+        print("{");
         println();
         currIndent += INDENTATION_DEPTH;
         for(InstructionSwitch.Case c : inst.getCases()) {
@@ -293,11 +377,15 @@ public class PrintingVisitor extends Visitor {
             c.getInst().accept(this);
             currIndent -= INDENTATION_DEPTH;
         }
-        indent();
-        println("DEFAULT:");
-        currIndent += INDENTATION_DEPTH;
-        inst.getDefaultInst().accept(this);
+        if(inst.getDefaultInst() != null) {
+            indent();
+            println("DEFAULT:");
+            currIndent += INDENTATION_DEPTH;
+            inst.getDefaultInst().accept(this);
+            currIndent -= INDENTATION_DEPTH;
+        }
         currIndent -= INDENTATION_DEPTH;
+        println();
     }
     
     /* expressions */
@@ -331,6 +419,12 @@ public class PrintingVisitor extends Visitor {
     @Override
     public void visit(ConstantString exp) {
         print("\"" + exp.getValue() + "\"");
+        printAttributes(exp);
+    }
+    
+    @Override
+    public void visit(ConstantNull exp) {
+        print("NULL");
         printAttributes(exp);
     }
 
@@ -457,29 +551,29 @@ public class PrintingVisitor extends Visitor {
     /* expressions - binary - relational */
 
     @Override
-    public void visit(Equal exp) { printBinaryExpInfix(exp, "==", false); }
+    public void visit(Equal exp) { printBinaryExpInfix(exp, "==", true); }
 
     @Override
-    public void visit(Unequal exp) { printBinaryExpInfix(exp, "!=", false); }
+    public void visit(Unequal exp) { printBinaryExpInfix(exp, "!=", true); }
 
     @Override
-    public void visit(GreaterEqual exp) { printBinaryExpInfix(exp, ">=", false); }
+    public void visit(GreaterEqual exp) { printBinaryExpInfix(exp, ">=", true); }
 
     @Override
-    public void visit(Greater exp) { printBinaryExpInfix(exp, ">", false); }
+    public void visit(Greater exp) { printBinaryExpInfix(exp, ">", true); }
 
     @Override
-    public void visit(LessEqual exp) { printBinaryExpInfix(exp, "<=", false); }
+    public void visit(LessEqual exp) { printBinaryExpInfix(exp, "<=", true); }
 
     @Override
-    public void visit(Less exp) { printBinaryExpInfix(exp, "<", false); }
+    public void visit(Less exp) { printBinaryExpInfix(exp, "<", true); }
 
     /* expressions - binary - logical */
 
     @Override
-    public void visit(And exp) { printBinaryExpInfix(exp, "&&", false); }
+    public void visit(And exp) { printBinaryExpInfix(exp, "&&", true); }
 
     @Override
-    public void visit(Or exp) { printBinaryExpInfix(exp, "||", false); }
+    public void visit(Or exp) { printBinaryExpInfix(exp, "||", true); }
 
 }

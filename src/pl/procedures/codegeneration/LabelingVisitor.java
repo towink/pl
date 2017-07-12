@@ -15,16 +15,22 @@ import pl.type.Type;
 /**
  * Visitor labeling instructions with their corresponding lines of machine code.
  * 
- * MUST BE CALLED AFTER TYPE CHECK!
+ * MUST BE CALLED AFTER ADRESS ASSIGNMENT (because of variable levels)
  */
 public class LabelingVisitor extends Visitor {
     
     private int label;
     private Stack<Declaration.DeclarationProc> pendingProcs;
+    private boolean debug;
 
     public LabelingVisitor() {
+        this(false);
+    }
+    
+    public LabelingVisitor(boolean debug) {
         label = 0;
         pendingProcs = new Stack<>();
+        this.debug = debug;
     }
     
     /* program */
@@ -43,6 +49,15 @@ public class LabelingVisitor extends Visitor {
         }
     }
     
+    /* declaration */
+    
+    @Override
+    public void visit(DeclarationProc dec) {
+        dec.getBody().accept(this);
+        if(debug) label++; //debug
+        label += 2;
+    }
+    
     /* instructions */
     
     /* instructions - general */
@@ -52,6 +67,7 @@ public class LabelingVisitor extends Visitor {
         assig.setFirstInstruction(label);
         assig.getMem().accept(this);
         assig.getExp().accept(this);
+        if(debug) label++; //debug
         label++; // pop2Store or copy
         assig.setNextInstruction(label);
     }
@@ -73,10 +89,12 @@ public class LabelingVisitor extends Visitor {
     @Override
     public void visit(InstructionCall call) {
         call.setFirstInstruction(label);
+        if(debug) label++; //debug
         label++; // activate
         for(Exp arg : call.getArgs()) {
             label += 3; // duplicate, pushInt, add
             arg.accept(this);
+            if(debug) label++; //debug
             label++; // pop2store or copy
         }
         label += 2; // setDisplay, jump
@@ -89,6 +107,7 @@ public class LabelingVisitor extends Visitor {
     public void visit(InstructionRead inst) {
         inst.setFirstInstruction(label);
         inst.getMem().accept(this);
+        if(debug) label++; //debug
         label += 2; // read, pop2Store
         inst.setNextInstruction(label);
     }
@@ -97,6 +116,7 @@ public class LabelingVisitor extends Visitor {
     public void visit(InstructionWrite inst) {
         inst.setFirstInstruction(label);
         inst.getExp().accept(this);
+        if(debug) label++; //debug
         if(inst.getExp().isMem()) {
             label++; // popLoadPush
         }
@@ -110,6 +130,7 @@ public class LabelingVisitor extends Visitor {
     public void visit(InstructionNew inst) {
         inst.setFirstInstruction(label);
         inst.getMem().accept(this);
+        if(debug) label++; //debug
         label += 2; // alloc, pop2store
         inst.setNextInstruction(label);
     }
@@ -118,6 +139,7 @@ public class LabelingVisitor extends Visitor {
     public void visit(InstructionFree inst) {
         inst.setFirstInstruction(label);
         inst.getMem().accept(this);
+        if(debug) label++; //debug
         label += 2; // popLoadStore, dealloc
         inst.setNextInstruction(label);
     }
@@ -128,12 +150,27 @@ public class LabelingVisitor extends Visitor {
     public void visit(InstructionWhile inst) {
         inst.setFirstInstruction(label);
         inst.getCondition().accept(this);
+        if(debug) label++; //debug
         if(inst.getCondition().isMem()) {
             label++; // popLoadPush
         }
         label++; // jump if false
         inst.getBody().accept(this);
+        if(debug) label++; //debug
         label++; // jump to condition
+        inst.setNextInstruction(label);
+    }
+    
+    @Override
+    public void visit(InstructionDoWhile inst) {
+        inst.setFirstInstruction(label);
+        inst.getBody().accept(this);
+        inst.getCondition().accept(this);
+        if(debug) label++; //debug
+        if(inst.getCondition().isMem()) {
+            label++; // popLoadPush
+        }
+        label++; // jumpIfTrue
         inst.setNextInstruction(label);
     }
     
@@ -141,6 +178,7 @@ public class LabelingVisitor extends Visitor {
     public void visit(InstructionIfThen inst) {
         inst.setFirstInstruction(label);
         inst.getCondition().accept(this);
+        if(debug) label++; //debug
         if(inst.getCondition().isMem()) {
             label++; // popLoadPush
         }
@@ -153,11 +191,13 @@ public class LabelingVisitor extends Visitor {
     public void visit(InstructionIfThenElse inst) {
         inst.setFirstInstruction(label);
         inst.getCondition().accept(this);
+        if(debug) label++; //debug
         if(inst.getCondition().isMem()) {
             label++; // popLoadPush
         }
         label++; // jump if false
         inst.getBodyIf().accept(this);
+        if(debug) label++; //debug
         label++; // jump after else block
         inst.getBodyElse().accept(this);
         inst.setNextInstruction(label);
@@ -167,17 +207,21 @@ public class LabelingVisitor extends Visitor {
     public void visit(InstructionSwitch inst) {
         inst.setFirstInstruction(label);
         inst.getExp().accept(this);
+        if(debug) label++; //debug
         if(inst.getExp().isMem()) {
             label++; // popLoadPush
         }
         for(InstructionSwitch.Case c : inst.getCases()) {
             c.getLiteral().accept(this);
+            if(debug) label++; //debug
             label++; // equal pop 1
             label++; // jump if false
             c.getInst().accept(this);
             label++; // jump to end
         }
-        inst.getDefaultInst().accept(this);
+        if(inst.getDefaultInst() != null) {
+            inst.getDefaultInst().accept(this);
+        }
         inst.setNextInstruction(label);
     }
     
@@ -188,6 +232,7 @@ public class LabelingVisitor extends Visitor {
     @Override
     public void visit(Constant c) {
         c.setFirstInstruction(label);
+        if(debug) label++; //debug
         label++; // push
         c.setNextInstruction(label);
     }
@@ -197,6 +242,7 @@ public class LabelingVisitor extends Visitor {
     @Override
     public void visit(Variable exp) {
         exp.setFirstInstruction(label);
+        if(debug) label++; //debug
         DeclarationVariable dec = exp.getDec();
         if(dec.getLevel() == 0) {
             label++; // pushInt
@@ -214,6 +260,7 @@ public class LabelingVisitor extends Visitor {
     public void visit(Dereference exp) {
         exp.setFirstInstruction(label);
         exp.getMem().accept(this);
+        if(debug) label++; //debug
         label++; // popLoadPush
         exp.setNextInstruction(label);
     }
@@ -222,6 +269,7 @@ public class LabelingVisitor extends Visitor {
     public void visit(Select exp) {
         exp.setFirstInstruction(label);
         exp.getMem().accept(this);
+        if(debug) label++; //debug
         label += 2; // pushInt, addInt
         exp.setNextInstruction(label);
     }
@@ -231,7 +279,11 @@ public class LabelingVisitor extends Visitor {
         exp.setFirstInstruction(label);
         exp.getMem().accept(this);
         exp.getExp().accept(this);
-        label += 3; // pushInt, multInt, addInt
+        if(debug) label++; //debug
+        if(exp.getExp().isMem()) {
+            label++; // popLoadPush
+        }
+        label += 4; // pushInt, multInt, addInt, inRange
         exp.setNextInstruction(label);
     }
     
@@ -241,6 +293,7 @@ public class LabelingVisitor extends Visitor {
     public void visit(UnaryExp exp) {
         exp.setFirstInstruction(label);
         exp.getOp().accept(this);
+        if(debug) label++; //debug
         if(exp.getOp().isMem()) {
             label++; // popLoadPush
         }
@@ -254,10 +307,12 @@ public class LabelingVisitor extends Visitor {
     public void visit(BinaryExp exp) {
         exp.setFirstInstruction(label);
         exp.getOp1().accept(this);
+        if(debug) label++; //debug
         if(exp.getOp1().isMem()) {
             label++; // popLoadPush
         }
         exp.getOp2().accept(this);
+        if(debug) label++; //debug
         if(exp.getOp2().isMem()) {
             label++; // popLoadPush
         }

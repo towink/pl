@@ -15,6 +15,15 @@ import pl.virtualmachine.VirtualMachine;
  *
  */
 public class Compiler {
+    
+    // heap size this procedure will use for the virtual machine
+    private static final int HEAP_SIZE = 1000;
+    private static final int ACTIVATION_STACK_SIZE = 1000;
+
+    private static final boolean DEBUG = true;
+    private static final boolean PRINT = false;
+    private static final boolean VERBOSE = false;
+    private static final boolean LINKER_VERBOSE = false;
 
     /**
      * Implements the whole compiling procedure for a program represented in
@@ -22,29 +31,24 @@ public class Compiler {
      * is run on the virtual machine.
      * 
      * @param p the program to be compiled and run.
-     * @param print
      */
-    public static void processAndRun(Program p, boolean print) {
-        
-        // heap size this procedure will use for the virtual machine
-        final int HEAP_SIZE = 10;
-        final int ACTIVATION_STACK_SIZE = 10;
+    public static void processAndRun(Program p) {
         
         /* PRINTING */
-        if(print) {
+        if(PRINT) {
             PrintingVisitor printer = new PrintingVisitor();
             p.accept(printer);
         }
         
         /* LINKING */
-        LinkingVisitor linker = new LinkingVisitor(true);
-        System.out.print("linking ...\n");
+        LinkingVisitor linker = new LinkingVisitor(LINKER_VERBOSE);
+        if(VERBOSE) System.out.print("linking ...\n");
         p.accept(linker);
         if(linker.isError())
             System.out.println("linker detected error, aborting\n");
         else {
-            System.out.println("linking complete.");
-            System.out.println();
+            if(VERBOSE) System.out.println("linking complete.");
+            if(VERBOSE) System.out.println();
         }
         
         // do not continue if linker produced errors
@@ -52,12 +56,12 @@ public class Compiler {
          
         /* TYPE CHECK */
         TypeCheckVisitor typeCheck = new TypeCheckVisitor(p);
-        System.out.print("type checking ... ");
+        if(VERBOSE) System.out.print("type checking ... ");
         p.accept(typeCheck);
         if(p.getType().equals(Type.ERROR))
             System.out.println("type checker detected error, aborting\n");
         else
-            System.out.println("type check complete.\n");
+            if(VERBOSE) System.out.println("type check complete.\n");
         
         // do not continue if type check produced errors
         if(p.getType().equals(Type.ERROR)) return;
@@ -65,28 +69,29 @@ public class Compiler {
         /* TYPE SIZE CALCULATION */
         TypeSizeCalculationVisitor typeSize
             = new TypeSizeCalculationVisitor();
-        System.out.print("calculating type sizes ...");
+        if(VERBOSE) System.out.print("calculating type sizes ...");
         p.accept(typeSize);
-        System.out.println("type size calculation complete.\n");
-
-        /* LABELLING */
-        LabelingVisitor labeling = new LabelingVisitor();
-        System.out.print("labeling ... ");
-        p.accept(labeling);
-        System.out.println("labeling complete.\n");
+        if(VERBOSE) System.out.println("type size calculation complete.\n");
         
         /* ADDRESS ASSIGNMENT */
         AddressAssignmentVisitor addrAssig
             = new AddressAssignmentVisitor();
-        System.out.print("assigning addresses ... ");
+        if(VERBOSE) System.out.print("assigning addresses ... ");
         p.accept(addrAssig);
-        System.out.println(
+        if(VERBOSE) {System.out.println(
             "address assignment complete: " + 
             addrAssig.staticMemorySize() + 
             " cells\n");
+        }
+        
+        /* LABELLING */
+        LabelingVisitor labeling = new LabelingVisitor(DEBUG);
+        if(VERBOSE) System.out.print("labeling ... ");
+        p.accept(labeling);
+        if(VERBOSE) System.out.println("labeling complete.\n");
         
         /* PRINTING WITH ATTRIBUTES */
-        if(print) {
+        if(PRINT) {
             PrintingVisitor printer = new PrintingVisitor(true);
             p.accept(printer);
             System.out.println();
@@ -102,12 +107,13 @@ public class Compiler {
 
         /* CODE GENERATION */
         CodeGenerationVisitor codeGen
-            = new CodeGenerationVisitor(machine);
-        System.out.print("generating code ...");
+            = new CodeGenerationVisitor(machine, DEBUG);
+        if(VERBOSE) System.out.print("generating code ...");
         p.accept(codeGen);
-        System.out.println("code generation complete: " + 
+        if(VERBOSE) {System.out.println("code generation complete: " + 
             machine.getCode().size() + " lines\n");
-        if(print) {
+        }
+        if(PRINT) {
             machine.printCode();
             System.out.println();
         }
@@ -115,7 +121,7 @@ public class Compiler {
         /* EXECUTE MACHINE CODE */
         machine.execute();
         System.out.println();
-        machine.printState();
+        //machine.printState();
 
     }
     

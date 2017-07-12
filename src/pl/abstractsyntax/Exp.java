@@ -32,6 +32,7 @@ public abstract class Exp extends AbstractSyntaxNode implements LinkToSource {
     }
     
     public boolean isMem() { return false; }
+    public boolean isConstant() { return false; }
     
    
     /* constants */
@@ -41,6 +42,9 @@ public abstract class Exp extends AbstractSyntaxNode implements LinkToSource {
         public Constant() {}
         
         public Constant(String linkToSource) { super(linkToSource); }
+        
+        @Override
+        public boolean isConstant() { return true; }
         
     }
    
@@ -147,6 +151,17 @@ public abstract class Exp extends AbstractSyntaxNode implements LinkToSource {
        
        public String getValue() { return val; }
        
+    }
+    
+    public static class ConstantNull extends Constant {
+        
+        public ConstantNull() {}
+        
+        public ConstantNull(String linkToSource) { super(linkToSource); }
+        
+        @Override
+        public void accept(Visitor v) { v.visit(this); }
+        
     }
     
     /* unary expressions */

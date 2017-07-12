@@ -1,0 +1,6 @@
+{
+    write "block1";
+    {
+        write "block2 with missing closing bracket";
+    
+}

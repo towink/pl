@@ -1,5 +1,6 @@
 package pl.abstractsyntax;
 
+import java.util.ArrayList;
 import pl.procedures.Visitor;
 import pl.type.Type.DefinedType;
 
@@ -86,6 +87,7 @@ public abstract class Declaration implements LinkToSource {
        public DeclarationVariable(String ident, DefinedType type) {
            super(ident);
            this.type = type;
+           this.level = -1;
        }
 
        /**
@@ -103,6 +105,7 @@ public abstract class Declaration implements LinkToSource {
        ) {
            super(ident, linkToSource);
            this.type = type;
+           this.level = -1;
        }
        
        public boolean isParamByRef() {
@@ -127,14 +130,14 @@ public abstract class Declaration implements LinkToSource {
      */
     public static class DeclarationProc extends Declaration {
         
-        private DeclarationParam[] params;
+        private ArrayList<DeclarationParam> params;
         private Inst body;
         private int level;
         private int size;
         
         public DeclarationProc(
                 String ident,
-                DeclarationParam[] params,
+                ArrayList<DeclarationParam> params,
                 Inst body
         ) {
             super(ident);
@@ -145,7 +148,7 @@ public abstract class Declaration implements LinkToSource {
         public DeclarationProc(
                 String ident,
                 String link,
-                DeclarationParam[] params,
+                ArrayList<DeclarationParam> params,
                 Inst body
         ) {
             super(ident, link);
@@ -162,7 +165,7 @@ public abstract class Declaration implements LinkToSource {
         @Override
         public void accept(Visitor v) { v.visit(this); }
         
-        public DeclarationParam[] getParams() { return params; }
+        public ArrayList<DeclarationParam> getParams() { return params; }
         public Inst getBody() { return body; }
         public int getLevel() { return level; }
         public int getSize() { return size; }

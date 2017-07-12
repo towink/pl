@@ -1,0 +1,5 @@
+dec proc(int p1, float p2, string p3,) {
+    write p1;
+}
+
+{}

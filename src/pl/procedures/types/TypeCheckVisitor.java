@@ -1,5 +1,6 @@
 package pl.procedures.types;
 
+import java.util.ArrayList;
 import pl.abstractsyntax.Declaration;
 import pl.abstractsyntax.Declaration.*;
 import pl.abstractsyntax.Exp;
@@ -9,6 +10,7 @@ import pl.abstractsyntax.Program;
 import pl.abstractsyntax.Inst;
 import pl.abstractsyntax.Inst.*;
 import pl.type.Type;
+import pl.type.Type.*;
 import pl.abstractsyntax.Mem.*;
 import pl.procedures.Visitor;
 import pl.type.TypeCompatibility;
@@ -67,7 +69,7 @@ public class TypeCheckVisitor extends Visitor {
             if( assig.getMem().getType() != Type.ERROR &&
                 assig.getExp().getType() != Type.ERROR
             ) {
-                Errors.printErrorFancy(assig, Errors.ERROR_ASSIGNMENT);
+                Errors.printError(assig, Errors.ERROR_TYPE_ASSIGNMENT);
             }
             assig.setType(Type.ERROR);
         }
@@ -97,10 +99,13 @@ public class TypeCheckVisitor extends Visitor {
     
     @Override
     public void visit(InstructionCall call) {
-        DeclarationParam[] params = call.getDecProc().getParams();
-        Exp[] args = call.getArgs();
-        if(params.length != args.length) {
-            Errors.printErrorFancy(call, Errors.ERROR_NUMBER_ARGUMENTS);
+        ArrayList<DeclarationParam> params = call.getDecProc().getParams();
+        ArrayList<Exp> args = call.getArgs();
+        if(params.size() != args.size()) {
+            Errors.printError(
+                    call,
+                    Errors.ERROR_TYPE_NUMBER_ARGUMENTS
+                    + ". Expected: " + params.size() + ", found: " + args.size());
             for(Exp arg : call.getArgs()) {
                 arg.accept(this);
             }
@@ -108,17 +113,17 @@ public class TypeCheckVisitor extends Visitor {
         }
         else {
             boolean error = false;
-            for(int i = 0; i < args.length; i++) {
-                if(params[i].isParamByRef() && !args[i].isMem()) {
-                    Errors.printErrorFancy(call, Errors.ERROR_BY_REFERENCE);
+            for(int i = 0; i < args.size(); i++) {
+                if(params.get(i).isParamByRef() && !args.get(i).isMem()) {
+                    Errors.printError(call, Errors.ERROR_TYPE_BY_REFERENCE);
                     error = true;
                 }
-                args[i].accept(this);
-                if(!TypeCompatibility.check( params[i].getType(), args[i].getType())) {
-                    if(args[i].getType() != Type.ERROR) {
-                        Errors.printErrorFancy(
+                args.get(i).accept(this);
+                if(!TypeCompatibility.check( params.get(i).getType(), args.get(i).getType())) {
+                    if(args.get(i).getType() != Type.ERROR) {
+                        Errors.printError(
                             call,
-                            Errors.ERROR_ARG_TYPE + ": " + params[i].getIdent());
+                            Errors.ERROR_TYPE_ARG_TYPE + ": " + params.get(i).getIdent());
                     }
                     error = true;
                 }
@@ -142,7 +147,7 @@ public class TypeCheckVisitor extends Visitor {
         }
         else {
             if(inst.getMem().getType() != Type.ERROR) {
-                Errors.printErrorFancy(inst, Errors.ERROR_NEW);
+                Errors.printError(inst, Errors.ERROR_TYPE_NEW);
             }
             inst.setType(Type.ERROR);
         }
@@ -156,7 +161,7 @@ public class TypeCheckVisitor extends Visitor {
         }
         else {
             if(inst.getMem().getType() != Type.ERROR) {
-                Errors.printErrorFancy(inst, Errors.ERROR_FREE);
+                Errors.printError(inst, Errors.ERROR_TYPE_FREE);
             }
             inst.setType(Type.ERROR);
         }
@@ -172,7 +177,7 @@ public class TypeCheckVisitor extends Visitor {
             if( inst.getMem().getType().isRecord() ||
                 inst.getMem().getType().isArray()
             ) {
-                Errors.printErrorFancy(inst, Errors.ERROR_READ);
+                Errors.printError(inst, Errors.ERROR_TYPE_READ);
                 inst.setType(Type.ERROR);
             }
             else {
@@ -203,7 +208,28 @@ public class TypeCheckVisitor extends Visitor {
             !(inst.getCondition().getType() == Type.BOOL)
             ) {
             Errors.printError(
-                inst.getLinkToSource() + ": " + Errors.ERROR_COND
+                inst.getLinkToSource() + ": " + Errors.ERROR_TYPE_COND
+            );
+        }
+        inst.getBody().accept(this);
+        if( inst.getCondition().getType() == Type.BOOL &&
+            inst.getBody().getType() == Type.OK
+        ) {
+           inst.setType(Type.OK);
+        }
+        else {
+           inst.setType(Type.ERROR);
+        }
+    }
+    
+    @Override
+    public void visit(InstructionDoWhile inst) {
+        inst.getCondition().accept(this);
+        if( !(inst.getCondition().getType() == Type.ERROR) &&
+            !(inst.getCondition().getType() == Type.BOOL)
+            ) {
+            Errors.printError(
+                inst.getLinkToSource() + ": " + Errors.ERROR_TYPE_COND
             );
         }
         inst.getBody().accept(this);
@@ -223,7 +249,7 @@ public class TypeCheckVisitor extends Visitor {
         if( !(inst.getCondition().getType() == Type.ERROR) &&
             !(inst.getCondition().getType() == Type.BOOL)
         ) {
-            Errors.printError(inst.getLinkToSource() + ": " + Errors.ERROR_COND);
+            Errors.printError(inst.getLinkToSource() + ": " + Errors.ERROR_TYPE_COND);
         }
         inst.getBody().accept(this);
         if( inst.getCondition().getType() == Type.BOOL &&
@@ -242,7 +268,7 @@ public class TypeCheckVisitor extends Visitor {
         if( inst.getCondition().getType() != Type.ERROR &&
             inst.getCondition().getType() != Type.BOOL
         ) {
-            Errors.printError(inst.getLinkToSource() + ": " + Errors.ERROR_COND);
+            Errors.printError(inst.getLinkToSource() + ": " + Errors.ERROR_TYPE_COND);
         }
         inst.getBodyIf().accept(this);
         inst.getBodyElse().accept(this);
@@ -264,7 +290,7 @@ public class TypeCheckVisitor extends Visitor {
             inst.getExp().getType() != Type.ERROR
         ) {
             Errors.printError(
-                inst.getLinkToSource() + ": " + Errors.ERROR_SWITCH
+                inst.getLinkToSource() + ": " + Errors.ERROR_TYPE_SWITCH
             );
         }
         boolean ok = true;
@@ -272,20 +298,33 @@ public class TypeCheckVisitor extends Visitor {
             c.getInst().accept(this);
             ok = ok && c.getInst().getType() == Type.OK;
         }
-        inst.getDefaultInst().accept(this);
-        ok = ok && inst.getDefaultInst().getType() == Type.OK;
-        if( ok &&
-            inst.getExp().getType() != Type.STRING &&
-            inst.getExp().getType() != Type.ERROR
-        ) {
-            inst.setType(Type.OK);
+        if(inst.getDefaultInst() != null) {
+            inst.getDefaultInst().accept(this);
+            ok = ok && inst.getDefaultInst().getType() == Type.OK;
+            if( ok &&
+                inst.getExp().getType() != Type.STRING &&
+                inst.getExp().getType() != Type.ERROR
+            ) {
+                inst.setType(Type.OK);
+            }
+            else {
+                inst.setType(Type.ERROR);
+            }
         }
         else {
-            inst.setType(Type.ERROR);
+            if( ok &&
+                inst.getExp().getType() != Type.STRING &&
+                inst.getExp().getType() != Type.ERROR
+            ) {
+                inst.setType(Type.OK);
+            }
+            else {
+                inst.setType(Type.ERROR);
+            }
         }
     }
 
-    /* epressions *
+    /* epressions */
 
     /* expressions - constants */
 
@@ -313,6 +352,11 @@ public class TypeCheckVisitor extends Visitor {
     public void visit(ConstantString exp) {
         exp.setType(Type.STRING);
     }
+    
+    @Override
+    public void visit(ConstantNull exp) {
+        exp.setType(new TypePointer());
+    }
 
     /* expressions - mems */
 
@@ -328,16 +372,19 @@ public class TypeCheckVisitor extends Visitor {
     @Override
     public void visit(Dereference d) {
         d.getMem().accept(this);
-        if(d.getMem().getType().isPointer()) {
-            d.setType(d.getMem().getType().toPointer().getBaseType());
+        Type memType = d.getMem().getType();
+        if(memType.isPointer() && !memType.toPointer().isNullPointer()) {
+            d.setType(memType.toPointer().getBaseType());
             // if the base type was a referenced type replace it
+            // TODO what is that good for?
             if(d.getType().isReference()) {
                 d.setType(d.getType().toRef().referencedType());
             }
         }
         else {
-            if(d.getMem().getType() != Type.ERROR)
-                Errors.printErrorFancy(d, Errors.ERROR_DEREF);
+            if(memType != Type.ERROR) {
+                Errors.printError(d, Errors.ERROR_TYPE_DEREF);
+            }
             d.setType(Type.ERROR);
         }
     }
@@ -348,7 +395,7 @@ public class TypeCheckVisitor extends Visitor {
         ind.getMem().accept(this);
         if(ind.getExp().getType() != Type.INT) {
             if(ind.getExp().getType() != Type.ERROR)
-                Errors.printErrorFancy(ind, Errors.ERROR_ARRAY_INDEX);
+                Errors.printError(ind, Errors.ERROR_TYPE_ARRAY_INDEX);
             ind.setType(Type.ERROR);
         }
         if(ind.getMem().getType().isArray()) {
@@ -362,7 +409,7 @@ public class TypeCheckVisitor extends Visitor {
         else {
             // trying to index something that is not an array
             if(ind.getMem().getType() != Type.ERROR)
-                Errors.printErrorFancy(ind, Errors.ERROR_ARRAY);
+                Errors.printError(ind, Errors.ERROR_TYPE_ARRAY);
             ind.setType(Type.ERROR);
         }
     }
@@ -381,7 +428,7 @@ public class TypeCheckVisitor extends Visitor {
         }
         else {
             if(s.getMem().getType() != Type.ERROR) {
-                Errors.printErrorFancy(s, Errors.ERROR_SELECT);
+                Errors.printError(s, Errors.ERROR_TYPE_SELECT);
             }
             s.setType(Type.ERROR);
         }
@@ -402,7 +449,7 @@ public class TypeCheckVisitor extends Visitor {
               exp.getOp().getType() == Type.REAL)
         ) {
             // error occured here, so print it
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             exp.setType(Type.ERROR);
         }
         // type is int or string - everything ok
@@ -420,7 +467,7 @@ public class TypeCheckVisitor extends Visitor {
         // type is not error - check if operand type is other than Boolean
         else if(exp.getOp().getType() != Type.BOOL) {
             // error occured here, so print it
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             exp.setType(Type.ERROR);
         }
         // type is Boolean - everything ok
@@ -438,7 +485,7 @@ public class TypeCheckVisitor extends Visitor {
         }
         else if(exp.getOp().getType() == Type.STRING) {
             // error occured here, so print it
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             exp.setType(Type.ERROR);
         }
         else {
@@ -454,7 +501,7 @@ public class TypeCheckVisitor extends Visitor {
         }
         else if(exp.getOp().getType() == Type.STRING) {
             // error occured here, so print it
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             exp.setType(Type.ERROR);
         }
         else {
@@ -474,7 +521,7 @@ public class TypeCheckVisitor extends Visitor {
                 exp.getOp().getType() == Type.REAL
         ) {
             // error occured here, so print it
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             exp.setType(Type.ERROR);
         }
         // type is bool or int
@@ -495,7 +542,7 @@ public class TypeCheckVisitor extends Visitor {
                 exp.getOp().getType() == Type.REAL
         ) {
             // error occured here, so print it
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             exp.setType(Type.ERROR);
         }
         // type is char or int
@@ -510,13 +557,13 @@ public class TypeCheckVisitor extends Visitor {
         if(exp.getOp().getType() == Type.ERROR) {
             exp.setType(Type.ERROR);
         }
-        // type is int, bool or real
-        else if(exp.getOp().getType() == Type.INT ||
+        // type is bool or real
+        else if(
                 exp.getOp().getType() == Type.BOOL ||
                 exp.getOp().getType() == Type.REAL
         ) {
             // error occured here, so print it
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             exp.setType(Type.ERROR);
         }
         // type is char or string
@@ -545,7 +592,7 @@ public class TypeCheckVisitor extends Visitor {
             !(exp.getOp1().getType() == Type.ERROR &&
               exp.getOp2().getType() == Type.ERROR)
         ) {
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             exp.setType(Type.ERROR);
         }
         // otherwise both operand types are error, do not print in this case
@@ -588,7 +635,7 @@ public class TypeCheckVisitor extends Visitor {
             if(exp.getOp1().getType() != Type.ERROR &&
                 exp.getOp2().getType() != Type.ERROR
             ) {
-                Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+                Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             }
             exp.setType(Type.ERROR);
         }
@@ -634,7 +681,7 @@ public class TypeCheckVisitor extends Visitor {
             if(exp.getOp1().getType() != Type.ERROR &&
                 exp.getOp2().getType() != Type.ERROR
             ) {
-                Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+                Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             }
             exp.setType(Type.ERROR);
         }
@@ -657,7 +704,7 @@ public class TypeCheckVisitor extends Visitor {
                 exp.getOp1().getType() != Type.ERROR &&
                 exp.getOp2().getType() != Type.ERROR
             ) {
-                Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+                Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             }
             exp.setType(Type.ERROR);
         }
@@ -681,16 +728,21 @@ public class TypeCheckVisitor extends Visitor {
              exp.getOp2().getType() == Type.CHAR) ||
             // string and string
             (exp.getOp1().getType() == Type.STRING &&
-             exp.getOp2().getType() == Type.STRING)
-            ) {
-            exp.setType(Type.BOOL);
+             exp.getOp2().getType() == Type.STRING) ||
+            // pointers
+            (exp.getOp1().getType().isPointer() &&
+             exp.getOp1().getType().isPointer())
+        ) {
+                exp.setType(Type.BOOL);
         }
         // check if at least one of the operand types is not error
         else if(
             !(exp.getOp1().getType() == Type.ERROR &&
               exp.getOp2().getType() == Type.ERROR)
             ) {
-            Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+            Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES + ": "
+                    + exp.getOp1().getType() + " and "
+                    + exp.getOp2().getType());
             exp.setType(Type.ERROR);
         }
         // otherwise both operand types are error, do not print in this case
@@ -712,7 +764,7 @@ public class TypeCheckVisitor extends Visitor {
         else {
             if(exp.getOp1().getType() != Type.ERROR &&
                 exp.getOp2().getType() != Type.ERROR) {
-                Errors.printErrorFancy(exp, Errors.ERROR_OPERAND_TYPES);
+                Errors.printError(exp, Errors.ERROR_TYPE_OPERAND_TYPES);
             }
             exp.setType(Type.ERROR);
         }

@@ -3,13 +3,11 @@ package pl.virtualmachine;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import pl.errors.Errors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import pl.errors.Errors;
 import pl.type.Type;
-import pl.type.Type.AtomicDefinedType;
-import pl.virtualmachine.VirtualMachineRuntimeException.*;
 
 /**
  * These types of machines are the target for our generated source code.
@@ -18,6 +16,10 @@ import pl.virtualmachine.VirtualMachineRuntimeException.*;
  * a program storage.
  */
 public class VirtualMachine {
+    
+    private final int NULL_POINTER_VALUE = -1000;
+    
+    private String debugMsg;
 
     // code containing the compiled program which the machine should execute
     private List<MachineInstruction> code;
@@ -37,6 +39,75 @@ public class VirtualMachine {
 
     // program counter - necessary for realizing control structures
     private int pc;
+    
+    public abstract class VirtualMachineRuntimeException extends RuntimeException {
+        
+        public VirtualMachineRuntimeException() {}
+        public VirtualMachineRuntimeException(String msg) {
+            // if there is a debugMsg installed, print it!
+            super((debugMsg == null ? "" : (debugMsg + ": ")) + msg);
+        }
+        
+    }
+
+    /**
+     * Thrown by virtual machine when trying to read from unitialized memory.
+     */
+    public class UninitializedMemoryAccessException
+            extends VirtualMachineRuntimeException {
+        
+        public UninitializedMemoryAccessException(int pc, int addr) {
+            super(
+                Errors.ERROR_RUNTIME_UNINITIALIZED_MEMORY
+                + ": instruction: " + pc
+                + ", address: " + addr
+            );
+        }
+        
+    }
+    
+    /**
+     * Thrown by virtual machine when array or string index out of its bounds.
+     */
+    public class OutOfBoundsException
+            extends VirtualMachineRuntimeException {
+        
+        public OutOfBoundsException(int pc) {
+            super(Errors.ERROR_RUNTIME_OUT_OF_BOUNDS + ": instruction: " + pc);
+        }
+        
+    }
+    
+    /**
+     * Thrown by virtual machine when trying to access a cell in memory  which
+     * does not exist.
+     */
+    public class InvalidAddressException
+            extends VirtualMachineRuntimeException {
+        
+        public InvalidAddressException(int pc, int addr) {
+            super(
+                Errors.ERROR_RUNTIME_INVALID_ADDRESS
+                + ": instruction: " + pc
+                + ", address: " + addr
+            );
+        }
+        
+    }
+    
+    /**
+     * Thrown by virtual machine when type conversion fails or values have an
+     * unexpected type.
+     * This should not happen if the static type checker works correct.
+     */
+    public class TypeException
+            extends VirtualMachineRuntimeException {
+        
+        public TypeException(int pc) {
+            super(Errors.ERROR_RUNTIME_TYPE_RUNTIME + ": instruction: " + pc);
+        }
+        
+    }
 
     public VirtualMachine(
             int staticMemorySize,
@@ -44,6 +115,7 @@ public class VirtualMachine {
             int heapSize,
             int ndisplays
     ) {
+        debugMsg = null;
         this.staticMemorySize = staticMemorySize;
         this.activationStackSize = activationStackSize;
         this.heapSize = heapSize;
@@ -62,14 +134,13 @@ public class VirtualMachine {
         pc = 0;
     }
     
-    /* public member functions */
-
-
     /**
      * Runs the specified program on the virtual machine.
      */
     public void execute() {
         while(pc < code.size()) {
+            //System.out.println("!!! " + pc);
+            //if(pc == 172) printState();
             code.get(pc).execute();
         }
     }
@@ -551,7 +622,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "sign change";
+            return "signChange";
         }
     }
 
@@ -563,7 +634,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "add int";
+            return "addInt";
         }
     }
 
@@ -575,7 +646,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "add real";
+            return "addReal";
         }
     }
 
@@ -587,7 +658,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "mult int";
+            return "multInt";
         }
     }
 
@@ -599,7 +670,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "mult real";
+            return "multReal";
         }
     }
 
@@ -611,7 +682,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "subt int";
+            return "subtInt";
         }
     }
 
@@ -623,7 +694,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "subt real";
+            return "subtReal";
         }
     }
 
@@ -635,7 +706,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "div int";
+            return "divInt";
         }
     }
 
@@ -647,7 +718,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "div real";
+            return "divReal";
         }
     }
 
@@ -674,7 +745,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "concat string";
+            return "concatString";
         }
 
     }
@@ -683,12 +754,16 @@ public class VirtualMachine {
     private class InstructionChainElement extends Pop2PushInstruction {
         @Override
         protected Value process(Value op1, Value op2) {
-            // what to do if index out of range?
-            return new ValueChar(op1.getString().charAt(op2.getInt()));
+            if(op2.getInt() < 0 || op2.getInt() >= op1.getString().length()) {
+                return UNKNOWN;
+            }
+            else {
+                return new ValueChar(op1.getString().charAt(op2.getInt()));
+            }
         }
         @Override
         public String toString() {
-            return "chain element";
+            return "chainElement";
         }
 
     }
@@ -752,7 +827,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "less equal";
+            return "lessEqual";
         }
     }
 
@@ -776,7 +851,7 @@ public class VirtualMachine {
         }
         @Override
         public String toString() {
-            return "greater equal";
+            return "greaterEqual";
         }
     }
 
@@ -845,9 +920,11 @@ public class VirtualMachine {
             );
             System.out.print(">> ");
             String input = "";
-            try { input = br.readLine(); }
+            try {
+                input = br.readLine();
+            }
             catch(IOException e) {
-                System.err.println("IO error");
+                e.printStackTrace();
                 System.exit(1);
             }
             if(targetType == Type.BOOL) {
@@ -979,24 +1056,6 @@ public class VirtualMachine {
         }
     }
 
-    // "desapilaDir"
-    @Deprecated
-    private class InstructionPopStore implements MachineInstruction {
-        private int addr;
-        public InstructionPopStore(int addr) {
-            this.addr = addr;
-        }
-        @Override
-        public void execute() {
-            memory[addr] = stack.pop();
-            pc++;
-        }
-        @Override
-        public String toString() {
-            return "popAndStore(" + this.addr + ")";
-        }
-    }
-
     // "desapilaInd"
     private InstructionPop2Store INSTRUCTION_POP2_STORE = new InstructionPop2Store();
     private class InstructionPop2Store implements MachineInstruction {
@@ -1014,36 +1073,13 @@ public class VirtualMachine {
         public String toString() { return "pop2Store"; }
     }
 
-    // "apilaDir"
-    @Deprecated
-    private class InstructionLoadPush implements MachineInstruction {
-        private int addr;
-        public InstructionLoadPush(int addr) {
-            this.addr = addr;
-        }
-        @Override
-        public void execute() {
-            if(memory[addr] == null) {
-                Errors.printWarning(Errors.WARNING_MEM_NOT_INITILIAZED);
-                stack.push(UNKNOWN);
-            }
-            else
-                stack.push(memory[addr]);
-            pc++;
-        }
-        @Override
-        public String toString() {
-            return "loadAndPush(" + addr + ")";
-        }
-   }
-
     // "apilaInd"
     private InstructionPopLoadPush INSTRUCTION_POP_LOAD_PUSH = new InstructionPopLoadPush();
     private class InstructionPopLoadPush implements MachineInstruction {
         @Override
         public void execute() {
             int addr = stack.pop().getInt();
-            if(addr >= memory.length) {
+            if(addr >= memory.length || addr < 0) {
                 throw new InvalidAddressException(pc, addr);
             }
             if(memory[addr] == null) {
@@ -1178,6 +1214,7 @@ public class VirtualMachine {
         @Override
         public void execute() {
             activationStackManager.fixDisplay(level, stack.pop().getInt());
+            pc++;
         }
         @Override
         public String toString() {
@@ -1240,6 +1277,25 @@ public class VirtualMachine {
         }
     }
     
+    private class InstructionJumpIfTrue implements MachineInstruction {
+        private int pos;
+        public InstructionJumpIfTrue(int pos) {
+            this.pos = pos;
+        }
+        @Override
+        public void execute() {
+            Value value = stack.pop();
+            if(value.getBool())
+                pc = pos;
+            else
+                pc++;
+        }
+        @Override
+        public String toString() {
+            return "jumpIfTrue(" + pos + ")";
+        }
+    }
+    
     // "irind"
     private InstructionPopJump INSTRUCTION_POP_JUMP = new InstructionPopJump();
     private class InstructionPopJump implements MachineInstruction {
@@ -1254,6 +1310,20 @@ public class VirtualMachine {
     }
     
     /* miscellaneous instructions */
+    
+    private class InstructionInRange implements MachineInstruction {
+        private int dim;
+        public InstructionInRange(int dim) { this.dim = dim; }
+        @Override
+        public void execute() {
+            if(stack.peek().getInt() >= dim || stack.peek().getInt() < 0) {
+                throw new OutOfBoundsException(pc);
+            }
+            pc++;
+        }
+        @Override
+        public String toString() { return "inRange(" + dim + ")"; }
+    }
     
     private InstructionStop INSTRUCTION_STOP = new InstructionStop();
     private class InstructionStop implements MachineInstruction {
@@ -1277,6 +1347,18 @@ public class VirtualMachine {
         public String toString() {
             return "nop";
         }
+    }
+    
+    private class InstructionDebug implements MachineInstruction {
+        private String msg;
+        public InstructionDebug(String debugMsg) { this.msg = debugMsg; }
+        @Override
+        public void execute() {
+            debugMsg = msg;
+            pc++;
+        }
+        @Override
+        public String toString() { return "debug(" + msg + ")"; }
     }
 
     /* instruction constructors */
@@ -1341,12 +1423,12 @@ public class VirtualMachine {
     public MachineInstruction pushReal(double val) { return new InstructionPushReal(val); }
     public MachineInstruction pushChar(char val) { return new InstructionPushChar(val); }
     public MachineInstruction pushString(String val) { return new InstructionPushString(val); }
-    // "desapilaDir"
-    public MachineInstruction popStore(int addr) { return new InstructionPopStore(addr); }
+    // returns a machine instruction which pushes the value of the null pointer
+    public MachineInstruction pushNullPointerValue() {
+        return new InstructionPushInt(NULL_POINTER_VALUE);
+    }
     // "desapilaInd"
     public MachineInstruction pop2Store() { return INSTRUCTION_POP2_STORE; }
-    // "apilaDir"
-    public MachineInstruction loadPush(int addr) { return new InstructionLoadPush(addr); }
     // "apilaInd"
     public MachineInstruction popLoadPush() { return INSTRUCTION_POP_LOAD_PUSH; }
     public MachineInstruction duplicate() { return INSTRUCTION_DUPLICATE; }
@@ -1374,13 +1456,24 @@ public class VirtualMachine {
     
     /* jump instructions */
 
-    public MachineInstruction jump(int pos) { return new InstructionJump(pos); }
-    public MachineInstruction jumpIfFalse(int pos) { return new InstructionJumpIfFalse(pos); }
+    public MachineInstruction jump(int pos) {
+        return new InstructionJump(pos);
+    }
+    public MachineInstruction jumpIfFalse(int pos) {
+        return new InstructionJumpIfFalse(pos);
+    }
+    public MachineInstruction jumpIfTrue(int pos) {
+        return new InstructionJumpIfTrue(pos);
+    }
     public MachineInstruction popJump() { return INSTRUCTION_POP_JUMP; }
     
     /* miscellaneous instructions */
     
+    public MachineInstruction inRange(int dim) {
+        return new InstructionInRange(dim);
+    }
     public MachineInstruction stop() { return INSTRUCTION_STOP; } 
     public MachineInstruction nop() { return INSTRUCTION_NOP; } 
+    public MachineInstruction debug(String msg) { return new InstructionDebug(msg); }
     
 }
